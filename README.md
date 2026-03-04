@@ -17,23 +17,23 @@ A personalized fitness and wellness platform where users get customized gym work
 
 ### 1. Install Dependencies
 ```bash
-cd server && npm install
-cd ../client && npm install
+cd backend && npm install
+cd ../frontend && npm install
 ```
 
 ### 2. Seed Database (Plans)
 ```bash
-cd server && npm run seed
+cd backend && npm run seed
 ```
 
 ### 3. Start Backend Server
 ```bash
-cd server && npm run dev
+cd backend && npm run dev
 ```
 
 ### 4. Start Frontend (in new terminal)
 ```bash
-cd client && npm run dev
+cd frontend && npm run dev
 ```
 
 ### 5. Open in Browser
