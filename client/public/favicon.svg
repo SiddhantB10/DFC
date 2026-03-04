@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="fb" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0d9488"/>
+      <stop offset="50%" stop-color="#14b8a6"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="fg" x1="0" y1="0" x2="0" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="white" stop-opacity="0.15"/>
+      <stop offset="50%" stop-color="white" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="64" height="64" rx="14" fill="url(#fb)"/>
+  <!-- Gentle glass overlay -->
+  <rect width="64" height="64" rx="14" fill="url(#fg)"/>
+  <!-- Dumbbell -->
+  <rect x="14" y="10" width="5" height="14" rx="2" fill="white" opacity="0.95"/>
+  <rect x="45" y="10" width="5" height="14" rx="2" fill="white" opacity="0.95"/>
+  <rect x="18" y="13.5" width="28" height="7" rx="3.5" fill="white" opacity="0.9"/>
+  <!-- DFC -->
+  <text x="32" y="47" font-family="Arial Black, sans-serif" font-weight="800" font-size="17" fill="white" text-anchor="middle" letter-spacing="1">DFC</text>
+  <!-- Border -->
+  <rect x="1" y="1" width="62" height="62" rx="13" fill="none" stroke="white" stroke-opacity="0.1" stroke-width="0.8"/>
+</svg>
