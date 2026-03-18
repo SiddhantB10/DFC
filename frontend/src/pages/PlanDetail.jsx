@@ -55,17 +55,86 @@ const PlanDetail = () => {
       return;
     }
 
+    if (!window.Razorpay) {
+      toast.error('Payment SDK failed to load. Please refresh and try again.');
+      return;
+    }
+
     setOrdering(true);
     try {
-      const { data } = await API.post('/orders', {
+      const { data } = await API.post('/orders/checkout', {
         planId: plan._id,
         duration,
         personalTrainer,
       });
-      if (data.success) {
-        toast.success('Plan purchased successfully! Your coach will connect with you on WhatsApp soon.');
-        navigate('/dashboard');
+
+      if (!data.success) {
+        throw new Error('Unable to create payment order');
       }
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: data.razorpayOrder.amount,
+        currency: data.razorpayOrder.currency,
+        name: 'DFC: Health & Harmony',
+        description: `${plan.name} (${durationLabels[duration]})`,
+        order_id: data.razorpayOrder.id,
+        prefill: {
+          name: user.name,
+          email: user.email,
+          contact: user.phone || ''
+        },
+        theme: {
+          color: '#0ea5e9'
+        },
+        modal: {
+          ondismiss: async () => {
+            try {
+              await API.post('/orders/payment-cancelled', {
+                orderId: data.orderId,
+                razorpay_order_id: data.razorpayOrder.id
+              });
+            } catch (cancelErr) {
+              console.error('Payment cancel update failed:', cancelErr);
+            }
+            toast.error('Payment cancelled. You can retry anytime.');
+          }
+        },
+        handler: async (response) => {
+          try {
+            const verifyRes = await API.post('/orders/verify-payment', {
+              orderId: data.orderId,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            if (verifyRes.data.success) {
+              toast.success('Payment successful. Subscription activated and invoice generated.');
+              navigate('/my-orders');
+            }
+          } catch (verifyErr) {
+            toast.error(verifyErr.response?.data?.message || 'Payment verification failed');
+          }
+        }
+      };
+
+      const razorpayInstance = new window.Razorpay(options);
+
+      razorpayInstance.on('payment.failed', async (response) => {
+        try {
+          await API.post('/orders/payment-failed', {
+            orderId: data.orderId,
+            razorpay_order_id: data.razorpayOrder.id,
+            error: response.error
+          });
+        } catch (failedErr) {
+          console.error('Payment failed update error:', failedErr);
+        }
+        toast.error(response.error?.description || 'Payment failed. Please try again.');
+      });
+
+      razorpayInstance.open();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Error processing order');
     } finally {

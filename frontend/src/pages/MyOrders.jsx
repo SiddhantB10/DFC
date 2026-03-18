@@ -5,11 +5,14 @@ import API from '../api/axios';
 import GlassCard from '../components/GlassCard';
 import ScrollReveal from '../components/ScrollReveal';
 import FloatingShapes from '../components/FloatingShapes';
-import { FiCalendar, FiShoppingBag } from 'react-icons/fi';
+import { FiCalendar, FiShoppingBag, FiFileText, FiX } from 'react-icons/fi';
+import toast from 'react-hot-toast';
 
 const MyOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [invoiceData, setInvoiceData] = useState(null);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -30,6 +33,28 @@ const MyOrders = () => {
     expired: 'bg-slate-100 text-slate-500',
     cancelled: 'bg-red-100 text-red-600',
     pending: 'bg-amber-100 text-amber-700',
+  };
+
+  const paymentStatusColors = {
+    paid: 'bg-green-100 text-green-700',
+    pending: 'bg-amber-100 text-amber-700',
+    failed: 'bg-red-100 text-red-600',
+    cancelled: 'bg-slate-100 text-slate-500',
+    refunded: 'bg-indigo-100 text-indigo-700'
+  };
+
+  const openInvoice = async (orderId) => {
+    setInvoiceLoading(true);
+    try {
+      const { data } = await API.get(`/orders/${orderId}/invoice`);
+      if (data.success) {
+        setInvoiceData(data);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Unable to fetch invoice');
+    } finally {
+      setInvoiceLoading(false);
+    }
   };
 
   if (loading) {
@@ -82,6 +107,10 @@ const MyOrders = () => {
                           <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${statusColors[order.status]}`}>
                             {order.status}
                           </span>
+                          <span className="text-xs text-slate-300">•</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${paymentStatusColors[order.paymentStatus]}`}>
+                            {order.paymentStatus}
+                          </span>
                           {order.personalTrainer && (
                             <>
                               <span className="text-xs text-slate-300">•</span>
@@ -103,12 +132,73 @@ const MyOrders = () => {
                           {new Date(order.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                       </div>
+                      {order.invoice && (
+                        <button
+                          onClick={() => openInvoice(order._id)}
+                          className="mt-3 inline-flex items-center gap-1 text-xs px-3 py-1 rounded-full bg-primary-50 text-primary-600 hover:bg-primary-100 transition-colors"
+                        >
+                          <FiFileText size={12} />
+                          View Invoice
+                        </button>
+                      )}
                     </div>
                   </div>
                 </GlassCard>
               </ScrollReveal>
             ))}
           </div>
+        )}
+
+        {invoiceLoading && (
+          <GlassCard className="mt-6 p-6 text-center">
+            <div className="w-8 h-8 border-2 border-primary-200 border-t-primary-500 rounded-full animate-spin mx-auto mb-2" />
+            <p className="text-sm text-slate-500">Loading invoice...</p>
+          </GlassCard>
+        )}
+
+        {invoiceData && (
+          <GlassCard className="mt-6 p-6 sm:p-8" hover3D={false}>
+            <div className="flex items-start justify-between gap-4 mb-6">
+              <div>
+                <h3 className="font-display font-bold text-xl text-slate-800">Invoice Details</h3>
+                <p className="text-sm text-slate-500">Invoice #{invoiceData.invoice?.invoiceNumber}</p>
+              </div>
+              <button
+                onClick={() => setInvoiceData(null)}
+                className="w-8 h-8 rounded-full glass flex items-center justify-center text-slate-500 hover:text-slate-700"
+              >
+                <FiX size={16} />
+              </button>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4 mb-4">
+              <div className="glass rounded-xl p-4">
+                <p className="text-xs text-slate-400 mb-1">Plan</p>
+                <p className="text-sm font-semibold text-slate-700">{invoiceData.order?.plan?.name}</p>
+              </div>
+              <div className="glass rounded-xl p-4">
+                <p className="text-xs text-slate-400 mb-1">Duration</p>
+                <p className="text-sm font-semibold text-slate-700 capitalize">{invoiceData.order?.duration}</p>
+              </div>
+              <div className="glass rounded-xl p-4">
+                <p className="text-xs text-slate-400 mb-1">Amount Paid</p>
+                <p className="text-sm font-semibold text-slate-700">₹{invoiceData.invoice?.total?.toLocaleString('en-IN')}</p>
+              </div>
+              <div className="glass rounded-xl p-4">
+                <p className="text-xs text-slate-400 mb-1">Transaction ID</p>
+                <p className="text-sm font-semibold text-slate-700 break-all">{invoiceData.payment?.razorpayPaymentId || 'N/A'}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-white/40">
+              <p className="text-xs text-slate-400">
+                Issued on {new Date(invoiceData.invoice?.issuedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </p>
+              <span className="text-xs px-3 py-1 rounded-full bg-green-100 text-green-700 font-medium">
+                {invoiceData.invoice?.status}
+              </span>
+            </div>
+          </GlassCard>
         )}
       </div>
     </div>

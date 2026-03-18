@@ -71,6 +71,7 @@ exports.getUserStats = async (req, res) => {
     const activeSubscription = await Order.findOne({
       user: req.user._id,
       status: 'active',
+      paymentStatus: 'paid',
       endDate: { $gte: new Date() }
     }).populate('plan', 'name category icon');
 

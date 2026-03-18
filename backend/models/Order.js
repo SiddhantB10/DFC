@@ -32,15 +32,31 @@ const orderSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  currency: {
+    type: String,
+    default: 'INR'
+  },
   status: {
     type: String,
     enum: ['active', 'expired', 'cancelled', 'pending'],
-    default: 'active'
+    default: 'pending'
   },
   paymentStatus: {
     type: String,
-    enum: ['paid', 'pending', 'failed', 'refunded'],
-    default: 'paid'
+    enum: ['paid', 'pending', 'failed', 'cancelled', 'refunded'],
+    default: 'pending'
+  },
+  gatewayOrderId: {
+    type: String,
+    default: ''
+  },
+  gatewayPaymentId: {
+    type: String,
+    default: ''
+  },
+  invoice: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Invoice'
   },
   startDate: {
     type: Date,

@@ -1,11 +1,50 @@
+const crypto = require('crypto');
+const Razorpay = require('razorpay');
 const Order = require('../models/Order');
 const Plan = require('../models/Plan');
+const Payment = require('../models/Payment');
+const Invoice = require('../models/Invoice');
 
-// @desc    Create new order
-// @route   POST /api/orders
-exports.createOrder = async (req, res) => {
+const monthsMap = { monthly: 1, quarterly: 3, halfYearly: 6, yearly: 12 };
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET
+});
+
+const getInvoiceNumber = () => {
+  const ts = Date.now().toString().slice(-8);
+  const random = Math.floor(1000 + Math.random() * 9000);
+  return `INV-${ts}-${random}`;
+};
+
+const ensureRazorpayConfigured = () => {
+  const keyId = process.env.RAZORPAY_KEY_ID || '';
+  const keySecret = process.env.RAZORPAY_KEY_SECRET || '';
+
+  const hasValues = Boolean(keyId && keySecret);
+  const isPlaceholder =
+    keyId === 'rzp_test_xxxxx' ||
+    keySecret === 'your_test_secret' ||
+    keyId.includes('xxxxx') ||
+    keySecret.includes('your_test');
+
+  return hasValues && !isPlaceholder;
+};
+
+// @desc    Create checkout order and Razorpay order
+// @route   POST /api/orders/checkout
+exports.createCheckoutOrder = async (req, res) => {
   try {
+    if (!ensureRazorpayConfigured()) {
+      return res.status(500).json({
+        success: false,
+        message: 'Razorpay test keys are missing or still placeholders. Update RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in backend/.env and VITE_RAZORPAY_KEY_ID in frontend/.env.'
+      });
+    }
+
     const { planId, duration, personalTrainer } = req.body;
+    const trainerRequested = personalTrainer === true;
 
     const plan = await Plan.findById(planId);
     if (!plan) {
@@ -13,37 +52,253 @@ exports.createOrder = async (req, res) => {
     }
 
     const planPrice = plan.pricing[duration];
-    if (!planPrice) {
+    if (!planPrice || !monthsMap[duration]) {
       return res.status(400).json({ success: false, message: 'Invalid duration selected' });
     }
 
-    // Calculate trainer price based on duration months
     let trainerPrice = 0;
-    if (personalTrainer && plan.personalTrainerAvailable) {
-      const monthsMap = { monthly: 1, quarterly: 3, halfYearly: 6, yearly: 12 };
-      trainerPrice = plan.personalTrainerPrice * (monthsMap[duration] || 1);
+    if (trainerRequested && plan.personalTrainerAvailable) {
+      trainerPrice = plan.personalTrainerPrice * monthsMap[duration];
     }
 
     const totalAmount = planPrice + trainerPrice;
+    const amountPaise = Math.round(totalAmount * 100);
 
     const order = await Order.create({
       user: req.user._id,
       plan: planId,
       duration,
-      personalTrainer,
+      personalTrainer: trainerRequested,
       planPrice,
       trainerPrice,
       totalAmount,
+      currency: 'INR',
+      status: 'pending',
+      paymentStatus: 'pending',
       startDate: new Date(),
-      endDate: new Date() // Will be calculated by pre-save hook
+      endDate: new Date()
     });
 
-    const populatedOrder = await Order.findById(order._id).populate('plan', 'name category icon color');
+    const gatewayOrder = await razorpay.orders.create({
+      amount: amountPaise,
+      currency: 'INR',
+      receipt: order._id.toString(),
+      notes: {
+        userId: req.user._id.toString(),
+        planId: plan._id.toString(),
+        duration
+      }
+    });
 
-    res.status(201).json({ success: true, order: populatedOrder });
+    order.gatewayOrderId = gatewayOrder.id;
+    await order.save();
+
+    await Payment.create({
+      order: order._id,
+      user: req.user._id,
+      amount: totalAmount,
+      amountPaise,
+      currency: 'INR',
+      razorpayOrderId: gatewayOrder.id,
+      status: 'created'
+    });
+
+    res.status(201).json({
+      success: true,
+      orderId: order._id,
+      amount: totalAmount,
+      amountPaise,
+      currency: 'INR',
+      razorpayOrder: {
+        id: gatewayOrder.id,
+        amount: gatewayOrder.amount,
+        currency: gatewayOrder.currency
+      }
+    });
   } catch (error) {
-    console.error('Order creation error:', error);
-    res.status(500).json({ success: false, message: 'Error creating order' });
+    console.error('Checkout order creation error:', error);
+    res.status(500).json({
+      success: false,
+      message: error?.error?.description || error?.message || 'Error creating checkout order'
+    });
+  }
+};
+
+// @desc    Verify Razorpay payment and activate subscription
+// @route   POST /api/orders/verify-payment
+exports.verifyPayment = async (req, res) => {
+  try {
+    const { orderId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+    if (!orderId || !razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ success: false, message: 'Missing payment verification fields' });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    if (order.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    if (!order.gatewayOrderId || order.gatewayOrderId !== razorpay_order_id) {
+      return res.status(400).json({ success: false, message: 'Gateway order mismatch' });
+    }
+
+    if (order.paymentStatus === 'paid' && order.invoice) {
+      const existingInvoice = await Invoice.findById(order.invoice);
+      return res.json({ success: true, message: 'Payment already verified', order, invoice: existingInvoice });
+    }
+
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest('hex');
+
+    if (expectedSignature !== razorpay_signature) {
+      await Payment.findOneAndUpdate(
+        { order: order._id, razorpayOrderId: razorpay_order_id },
+        {
+          status: 'failed',
+          razorpayPaymentId: razorpay_payment_id,
+          razorpaySignature: razorpay_signature,
+          failureReason: 'Signature verification failed'
+        }
+      );
+
+      order.paymentStatus = 'failed';
+      order.status = 'pending';
+      await order.save();
+
+      return res.status(400).json({ success: false, message: 'Invalid payment signature' });
+    }
+
+    const payment = await Payment.findOneAndUpdate(
+      { order: order._id, razorpayOrderId: razorpay_order_id },
+      {
+        status: 'captured',
+        razorpayPaymentId: razorpay_payment_id,
+        razorpaySignature: razorpay_signature,
+        failureReason: ''
+      },
+      { new: true }
+    );
+
+    if (!payment) {
+      return res.status(400).json({ success: false, message: 'Payment record not found for this order' });
+    }
+
+    order.paymentStatus = 'paid';
+    order.status = 'active';
+    order.gatewayOrderId = razorpay_order_id;
+    order.gatewayPaymentId = razorpay_payment_id;
+    await order.save();
+
+    let invoiceNumber = getInvoiceNumber();
+    while (await Invoice.exists({ invoiceNumber })) {
+      invoiceNumber = getInvoiceNumber();
+    }
+
+    const plan = await Plan.findById(order.plan).select('name');
+    const invoice = await Invoice.create({
+      invoiceNumber,
+      order: order._id,
+      payment: payment._id,
+      user: req.user._id,
+      items: [
+        { label: 'Plan', value: plan?.name || 'Plan' },
+        { label: 'Duration', value: order.duration },
+        { label: 'Personal Trainer', value: order.personalTrainer ? 'Yes' : 'No' }
+      ],
+      subtotal: order.totalAmount,
+      tax: 0,
+      total: order.totalAmount,
+      status: 'paid'
+    });
+
+    order.invoice = invoice._id;
+    await order.save();
+
+    const populatedOrder = await Order.findById(order._id)
+      .populate('plan', 'name category icon color slug')
+      .populate('invoice', 'invoiceNumber issuedAt total status');
+
+    res.json({ success: true, message: 'Payment verified successfully', order: populatedOrder, invoice });
+  } catch (error) {
+    console.error('Payment verification error:', error);
+    res.status(500).json({ success: false, message: 'Error verifying payment' });
+  }
+};
+
+// @desc    Mark payment as failed
+// @route   POST /api/orders/payment-failed
+exports.markPaymentFailed = async (req, res) => {
+  try {
+    const { orderId, razorpay_order_id, error } = req.body;
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    if (order.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    order.paymentStatus = 'failed';
+    order.status = 'pending';
+    await order.save();
+
+    await Payment.findOneAndUpdate(
+      { order: order._id, razorpayOrderId: razorpay_order_id || order.gatewayOrderId },
+      {
+        status: 'failed',
+        failureReason: error?.description || error?.reason || 'Payment failed'
+      }
+    );
+
+    res.json({ success: true, message: 'Payment marked as failed' });
+  } catch (error) {
+    console.error('Mark payment failed error:', error);
+    res.status(500).json({ success: false, message: 'Error updating payment status' });
+  }
+};
+
+// @desc    Mark payment as cancelled
+// @route   POST /api/orders/payment-cancelled
+exports.markPaymentCancelled = async (req, res) => {
+  try {
+    const { orderId, razorpay_order_id } = req.body;
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    if (order.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    if (order.paymentStatus !== 'paid') {
+      order.paymentStatus = 'cancelled';
+      order.status = 'cancelled';
+      await order.save();
+    }
+
+    await Payment.findOneAndUpdate(
+      { order: order._id, razorpayOrderId: razorpay_order_id || order.gatewayOrderId },
+      {
+        status: 'cancelled',
+        failureReason: 'Payment cancelled by user'
+      }
+    );
+
+    res.json({ success: true, message: 'Payment marked as cancelled' });
+  } catch (error) {
+    console.error('Mark payment cancelled error:', error);
+    res.status(500).json({ success: false, message: 'Error updating payment cancellation' });
   }
 };
 
@@ -53,6 +308,7 @@ exports.getMyOrders = async (req, res) => {
   try {
     const orders = await Order.find({ user: req.user._id })
       .populate('plan', 'name category icon color slug')
+      .populate('invoice', 'invoiceNumber issuedAt total status')
       .sort({ createdAt: -1 });
 
     res.json({ success: true, count: orders.length, orders });
@@ -67,7 +323,8 @@ exports.getOrder = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
       .populate('plan')
-      .populate('user', 'name email phone');
+      .populate('user', 'name email phone')
+      .populate('invoice', 'invoiceNumber issuedAt total status');
 
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
@@ -91,6 +348,7 @@ exports.getActiveSubscription = async (req, res) => {
     const activeOrder = await Order.findOne({
       user: req.user._id,
       status: 'active',
+      paymentStatus: 'paid',
       endDate: { $gte: new Date() }
     })
     .populate('plan', 'name category icon color slug features')
@@ -99,5 +357,49 @@ exports.getActiveSubscription = async (req, res) => {
     res.json({ success: true, subscription: activeOrder });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Error fetching subscription' });
+  }
+};
+
+// @desc    Get invoice by order id
+// @route   GET /api/orders/:id/invoice
+exports.getInvoiceByOrder = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id)
+      .populate('plan', 'name category')
+      .populate('invoice');
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    if (order.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    if (!order.invoice) {
+      return res.status(404).json({ success: false, message: 'Invoice not available for this order' });
+    }
+
+    const payment = await Payment.findOne({ order: order._id }).select('razorpayPaymentId razorpayOrderId status');
+
+    res.json({
+      success: true,
+      invoice: order.invoice,
+      order: {
+        _id: order._id,
+        duration: order.duration,
+        totalAmount: order.totalAmount,
+        plan: order.plan,
+        personalTrainer: order.personalTrainer,
+        startDate: order.startDate,
+        endDate: order.endDate,
+        paymentStatus: order.paymentStatus,
+        gatewayPaymentId: order.gatewayPaymentId
+      },
+      payment
+    });
+  } catch (error) {
+    console.error('Invoice fetch error:', error);
+    res.status(500).json({ success: false, message: 'Error fetching invoice' });
   }
 };

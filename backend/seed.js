@@ -1,8 +1,9 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const path = require('path');
 const Plan = require('./models/Plan');
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env'), override: true });
 
 const plans = [
   {
