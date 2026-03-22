@@ -204,7 +204,7 @@ const PlanDetail = () => {
 
             {/* Trust Badges */}
             <ScrollReveal delay={0.2}>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
                   { icon: FiShield, title: 'Secure', desc: 'Your data is safe' },
                   { icon: FiClock, title: 'Flexible', desc: 'Cancel anytime' },
@@ -223,7 +223,7 @@ const PlanDetail = () => {
           {/* Pricing Sidebar */}
           <div>
             <ScrollReveal delay={0.1}>
-              <div className="sticky top-28">
+              <div className="lg:sticky lg:top-28">
                 <GlassCard className="p-6 sm:p-8">
                   <h3 className="font-display font-bold text-lg text-slate-800 mb-6">Select Your Plan</h3>
 
@@ -233,7 +233,7 @@ const PlanDetail = () => {
                       <button
                         key={key}
                         onClick={() => setDuration(key)}
-                        className={`w-full flex items-center justify-between p-4 rounded-xl transition-all duration-300 text-left ${
+                        className={`w-full flex items-center justify-between gap-3 p-4 rounded-xl transition-all duration-300 text-left ${
                           duration === key
                             ? 'bg-primary-50/80 border-2 border-primary-400/50 shadow-sm'
                             : 'glass border-2 border-transparent hover:border-white/40'
@@ -259,7 +259,7 @@ const PlanDetail = () => {
                     <div className="mb-6">
                       <button
                         onClick={() => setPersonalTrainer(!personalTrainer)}
-                        className={`w-full flex items-center justify-between p-4 rounded-xl transition-all duration-500 ${
+                        className={`w-full flex items-center justify-between gap-3 p-4 rounded-xl transition-all duration-500 ${
                           personalTrainer
                             ? 'bg-secondary-50/80 border-2 border-secondary-400/50'
                             : 'glass border-2 border-transparent hover:border-white/40'

@@ -33,7 +33,7 @@ const DumbbellBg = () => {
     >
       {/* Large dumbbell — top right, rotated */}
       <Dumbbell
-        className="absolute text-primary-500/[0.12] w-[420px]"
+        className="absolute hidden lg:block text-primary-500/[0.12] w-[420px]"
         style={{
           top: '8%',
           right: '-3%',
@@ -43,7 +43,7 @@ const DumbbellBg = () => {
 
       {/* Medium dumbbell — center left */}
       <Dumbbell
-        className="absolute text-secondary-500/[0.10] w-[320px]"
+        className="absolute hidden md:block text-secondary-500/[0.10] w-[320px]"
         style={{
           top: '42%',
           left: '-4%',
@@ -53,7 +53,7 @@ const DumbbellBg = () => {
 
       {/* Small dumbbell — bottom right */}
       <Dumbbell
-        className="absolute text-primary-400/[0.09] w-[260px]"
+        className="absolute hidden sm:block text-primary-400/[0.09] w-[260px]"
         style={{
           bottom: '12%',
           right: '6%',
@@ -63,7 +63,7 @@ const DumbbellBg = () => {
 
       {/* Extra small — top left */}
       <Dumbbell
-        className="absolute text-secondary-400/[0.08] w-[200px]"
+        className="absolute hidden md:block text-secondary-400/[0.08] w-[200px]"
         style={{
           top: '18%',
           left: '8%',
@@ -73,7 +73,7 @@ const DumbbellBg = () => {
 
       {/* Medium — bottom center-left */}
       <Dumbbell
-        className="absolute text-primary-600/[0.08] w-[300px]"
+        className="absolute hidden lg:block text-primary-600/[0.08] w-[300px]"
         style={{
           bottom: '30%',
           left: '25%',

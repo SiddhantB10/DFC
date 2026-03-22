@@ -93,7 +93,7 @@ const Register = () => {
             </div>
 
             {/* Step Indicator */}
-            <div className="flex items-center justify-center gap-3 mb-8">
+            <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
               {[1, 2].map((s) => (
                 <div key={s} className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
@@ -185,7 +185,7 @@ const Register = () => {
                   transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                   className="space-y-4"
                 >
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-600 mb-2">Age</label>
                       <input
@@ -217,7 +217,7 @@ const Register = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-600 mb-2">Current Weight (kg)</label>
                       <input

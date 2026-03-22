@@ -108,7 +108,7 @@ const Profile = () => {
         {/* Tabs */}
         <ScrollReveal>
           <div className="flex justify-center mb-8">
-            <div className="glass-card inline-flex p-1.5 gap-1">
+            <div className="glass-card inline-flex flex-wrap justify-center p-1.5 gap-1">
               {[
                 { key: 'profile', label: 'Profile', icon: FiUser },
                 { key: 'fitness', label: 'Fitness', icon: FiActivity },
@@ -117,7 +117,7 @@ const Profile = () => {
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-500 ${
+                  className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-500 ${
                     activeTab === tab.key
                       ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg'
                       : 'text-slate-500'

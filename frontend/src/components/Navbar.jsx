@@ -201,7 +201,7 @@ const Navbar = () => {
               animate={{ opacity: 1, height: 'auto', filter: 'blur(0px)' }}
               exit={{ opacity: 0, height: 0, filter: 'blur(8px)' }}
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="md:hidden mt-4 overflow-hidden"
+              className="md:hidden mt-4 overflow-hidden max-h-[70vh] overflow-y-auto"
             >
               <div className="glass-strong rounded-2xl p-4 space-y-1">
                 {navLinks.map((link) => (

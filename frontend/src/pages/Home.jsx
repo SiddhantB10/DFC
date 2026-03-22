@@ -66,7 +66,7 @@ const Home = () => {
 
               <motion.h1
                 variants={fadeUp}
-                className="font-display text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-[1.08] mb-6"
+                className="font-display text-4xl sm:text-6xl lg:text-7xl font-extrabold leading-[1.08] mb-6"
               >
                 <span className="text-slate-800">Transform</span>
                 <br />
@@ -83,18 +83,18 @@ const Home = () => {
                 Guided personally through WhatsApp by dedicated trainers.
               </motion.p>
 
-              <motion.div variants={fadeUp} className="flex flex-wrap gap-4 mb-10">
-                <Link to="/plans" className="glass-btn glass-btn-primary text-base !py-4 !px-8 group">
+              <motion.div variants={fadeUp} className="flex flex-wrap gap-3 sm:gap-4 mb-10">
+                <Link to="/plans" className="glass-btn glass-btn-primary text-sm sm:text-base !py-3 sm:!py-4 !px-6 sm:!px-8 group">
                   Explore Plans
                   <FiArrowRight className="group-hover:translate-x-1.5 transition-transform duration-500" size={18} />
                 </Link>
-                <Link to="/about" className="glass-btn glass-btn-secondary text-base !py-4 !px-8">
+                <Link to="/about" className="glass-btn glass-btn-secondary text-sm sm:text-base !py-3 sm:!py-4 !px-6 sm:!px-8">
                   Learn More
                 </Link>
               </motion.div>
 
               {/* Trust badges */}
-              <motion.div variants={fadeUp} className="flex items-center gap-6 text-sm text-slate-400">
+              <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-4 sm:gap-6 text-sm text-slate-400">
                 <div className="flex items-center gap-2">
                   <div className="flex -space-x-2">
                     {['bg-primary-400', 'bg-secondary-400', 'bg-accent-400', 'bg-pink-400'].map((bg, i) => (
@@ -375,7 +375,7 @@ const Home = () => {
           {/* Duration Toggle */}
           <ScrollReveal>
             <div className="flex justify-center mb-12">
-              <div className="glass-card inline-flex p-1.5 gap-1" style={{ background: 'rgba(255,255,255,0.18)' }}>
+              <div className="glass-card inline-flex flex-wrap justify-center p-1.5 gap-1" style={{ background: 'rgba(255,255,255,0.18)' }}>
                 {[
                   { key: 'monthly', label: 'Monthly' },
                   { key: 'quarterly', label: 'Quarterly' },

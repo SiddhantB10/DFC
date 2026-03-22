@@ -46,6 +46,13 @@ html {
   scroll-behavior: smooth;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+}
+
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background: #f0f4f8;
@@ -60,6 +67,13 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
 }
 
 /* Animated mesh gradient background overlay */
@@ -587,6 +601,25 @@ input[type="number"].glass-input {
 
   .glass-float {
     display: none;
+  }
+
+  body {
+    background-attachment: scroll;
+  }
+
+  body::before {
+    animation: none;
+    opacity: 0.75;
+  }
+}
+
+@media (max-width: 640px) {
+  .container-custom {
+    @apply px-3;
+  }
+
+  .section-padding {
+    @apply px-3 py-12;
   }
 }
 

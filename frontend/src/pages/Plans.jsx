@@ -100,12 +100,12 @@ const Plans = () => {
         <ScrollReveal>
           <div className="flex justify-center mb-12">
             <LayoutGroup id="durations">
-              <div className="glass-card inline-flex p-1.5 gap-1" style={{ background: 'rgba(255,255,255,0.18)' }}>
+              <div className="glass-card inline-flex flex-wrap justify-center p-1.5 gap-1" style={{ background: 'rgba(255,255,255,0.18)' }}>
                 {durations.map((d) => (
                   <button
                     key={d.key}
                     onClick={() => setDuration(d.key)}
-                    className={`relative px-4 sm:px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-300 ${
+                    className={`relative px-3 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors duration-300 ${
                       duration === d.key
                         ? 'text-slate-800'
                         : 'text-slate-500 hover:text-slate-700'

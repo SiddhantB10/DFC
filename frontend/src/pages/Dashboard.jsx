@@ -245,15 +245,15 @@ const Dashboard = () => {
                 </h2>
                 <div className="space-y-3">
                   {orders.slice(0, 5).map((order) => (
-                    <div key={order._id} className="flex items-center justify-between p-4 rounded-xl glass">
-                      <div className="flex items-center gap-3">
+                    <div key={order._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl glass gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
                         <span className="text-2xl">{order.plan?.icon || '📋'}</span>
-                        <div>
-                          <p className="text-sm font-semibold text-slate-700">{order.plan?.name}</p>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-700 truncate">{order.plan?.name}</p>
                           <p className="text-xs text-slate-400 capitalize">{order.duration} • {order.status}</p>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-left sm:text-right">
                         <p className="text-sm font-bold text-slate-800">₹{order.totalAmount?.toLocaleString('en-IN')}</p>
                         <p className="text-xs text-slate-400">
                           {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
