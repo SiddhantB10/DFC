@@ -7,10 +7,7 @@ const Invoice = require('../models/Invoice');
 
 const monthsMap = { monthly: 1, quarterly: 3, halfYearly: 6, yearly: 12 };
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET
-});
+let razorpayClient = null;
 
 const getInvoiceNumber = () => {
   const ts = Date.now().toString().slice(-8);
@@ -32,11 +29,27 @@ const ensureRazorpayConfigured = () => {
   return hasValues && !isPlaceholder;
 };
 
+const getRazorpayClient = () => {
+  if (!ensureRazorpayConfigured()) {
+    return null;
+  }
+
+  if (!razorpayClient) {
+    razorpayClient = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET
+    });
+  }
+
+  return razorpayClient;
+};
+
 // @desc    Create checkout order and Razorpay order
 // @route   POST /api/orders/checkout
 exports.createCheckoutOrder = async (req, res) => {
   try {
-    if (!ensureRazorpayConfigured()) {
+    const razorpay = getRazorpayClient();
+    if (!razorpay) {
       return res.status(500).json({
         success: false,
         message: 'Razorpay test keys are missing or still placeholders. Update RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in backend/.env and VITE_RAZORPAY_KEY_ID in frontend/.env.'

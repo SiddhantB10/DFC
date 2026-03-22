@@ -39,6 +39,56 @@ cd frontend && npm run dev
 ### 5. Open in Browser
 Visit **http://localhost:5173**
 
+## Vercel Deployment
+
+This repo is configured for a **single Vercel project**:
+- React frontend is built from `frontend/`
+- Express backend runs as a Vercel serverless function from `backend/api/index.js`
+- Frontend calls backend through `/api`
+
+### 1. Prepare environment variables
+
+Use these example files:
+- `backend/.env.example`
+- `frontend/.env.example`
+
+In Vercel Project Settings -> Environment Variables, add:
+- `MONGO_URI`
+- `JWT_SECRET`
+- `JWT_EXPIRE`
+- `RAZORPAY_KEY_ID`
+- `RAZORPAY_KEY_SECRET`
+- `FRONTEND_URL` (for example: `https://your-project.vercel.app`)
+- `ALLOW_VERCEL_PREVIEW` (`true` recommended)
+- `VITE_RAZORPAY_KEY_ID`
+- `VITE_API_BASE_URL` (set to `/api`)
+
+### 2. MongoDB Atlas requirements
+
+- Use an Atlas connection string in `MONGO_URI`
+- Ensure database user credentials are correct
+- In Atlas Network Access, allow Vercel access (for quick setup: `0.0.0.0/0`, then tighten later)
+
+### 3. Deploy
+
+From repo root:
+
+```bash
+vercel
+```
+
+For production:
+
+```bash
+vercel --prod
+```
+
+### 4. Verify after deploy
+
+- Frontend loads at your Vercel domain
+- API health check responds at `/api/health`
+- Login/register and plans pages load without CORS or API errors
+
 ## Features
 
 - User registration with fitness metrics (age, height, weight, goal weight)
