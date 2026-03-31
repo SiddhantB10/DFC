@@ -10,6 +10,10 @@ const Plans = () => {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [duration, setDuration] = useState('monthly');
+  const [searchText, setSearchText] = useState('');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [minRating, setMinRating] = useState('');
   const [searchParams, setSearchParams] = useSearchParams();
   const activeCategory = searchParams.get('category') || 'all';
 
@@ -17,8 +21,16 @@ const Plans = () => {
     const fetchPlans = async () => {
       setLoading(true);
       try {
-        const params = activeCategory !== 'all' ? `?category=${activeCategory}` : '';
-        const { data } = await API.get(`/plans${params}`);
+        const query = new URLSearchParams();
+        if (activeCategory !== 'all') query.set('category', activeCategory);
+        if (searchText.trim()) query.set('q', searchText.trim());
+        if (minPrice) query.set('minPrice', minPrice);
+        if (maxPrice) query.set('maxPrice', maxPrice);
+        if (minRating) query.set('minRating', minRating);
+        query.set('duration', duration);
+
+        const qs = query.toString();
+        const { data } = await API.get(`/plans${qs ? `?${qs}` : ''}`);
         if (data.success) setPlans(data.plans);
       } catch (err) {
         console.error('Error fetching plans:', err);
@@ -27,7 +39,7 @@ const Plans = () => {
       }
     };
     fetchPlans();
-  }, [activeCategory]);
+  }, [activeCategory, searchText, minPrice, maxPrice, minRating, duration]);
 
   const categories = [
     { key: 'all', label: 'All Plans', icon: '🎯' },
@@ -61,6 +73,44 @@ const Plans = () => {
             <p className="text-slate-500 leading-relaxed">
               Choose from our range of personalized fitness plans. All plans include WhatsApp guidance from certified professionals.
             </p>
+          </div>
+        </ScrollReveal>
+
+        <ScrollReveal>
+          <div className="glass-card p-4 sm:p-5 mb-6">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <input
+                type="text"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                placeholder="Search plans"
+                className="glass-input"
+              />
+              <input
+                type="number"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+                placeholder="Min price"
+                className="glass-input"
+              />
+              <input
+                type="number"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                placeholder="Max price"
+                className="glass-input"
+              />
+              <select
+                value={minRating}
+                onChange={(e) => setMinRating(e.target.value)}
+                className="glass-input"
+              >
+                <option value="">Any rating</option>
+                <option value="4">4.0+</option>
+                <option value="4.5">4.5+</option>
+                <option value="4.8">4.8+</option>
+              </select>
+            </div>
           </div>
         </ScrollReveal>
 

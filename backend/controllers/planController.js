@@ -4,13 +4,31 @@ const Plan = require('../models/Plan');
 // @route   GET /api/plans
 exports.getPlans = async (req, res) => {
   try {
-    const { category } = req.query;
+    const { category, q, minPrice, maxPrice, minRating, duration = 'monthly' } = req.query;
     const filter = { isActive: true };
     if (category && category !== 'all') {
       filter.category = category;
     }
 
-    const plans = await Plan.find(filter).sort({ createdAt: 1 });
+    if (q) {
+      filter.$or = [
+        { name: { $regex: q, $options: 'i' } },
+        { description: { $regex: q, $options: 'i' } },
+        { shortDescription: { $regex: q, $options: 'i' } }
+      ];
+    }
+
+    if (minRating) {
+      filter.rating = { $gte: Number(minRating) };
+    }
+
+    if (minPrice || maxPrice) {
+      filter[`pricing.${duration}`] = {};
+      if (minPrice) filter[`pricing.${duration}`].$gte = Number(minPrice);
+      if (maxPrice) filter[`pricing.${duration}`].$lte = Number(maxPrice);
+    }
+
+    const plans = await Plan.find(filter).sort({ createdAt: 1, rating: -1 });
     res.json({ success: true, count: plans.length, plans });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error fetching plans' });
@@ -56,5 +74,31 @@ exports.updatePlan = async (req, res) => {
     res.json({ success: true, plan });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Error updating plan' });
+  }
+};
+
+// @desc    Get personalized plan recommendations
+// @route   GET /api/plans/recommended/me
+exports.getRecommendedPlans = async (req, res) => {
+  try {
+    const user = req.user;
+    const preferredCategories = [];
+
+    if (user?.fitnessLevel === 'beginner') {
+      preferredCategories.push('yoga', 'diet', 'combo');
+    } else if (user?.fitnessLevel === 'intermediate') {
+      preferredCategories.push('gym', 'combo', 'diet');
+    } else {
+      preferredCategories.push('gym', 'complete', 'combo');
+    }
+
+    const plans = await Plan.find({ isActive: true, category: { $in: preferredCategories } })
+      .sort({ rating: -1, isPopular: -1 })
+      .limit(4);
+
+    res.json({ success: true, plans });
+  } catch (error) {
+    console.error('Recommended plans error:', error);
+    res.status(500).json({ success: false, message: 'Error fetching recommendations' });
   }
 };

@@ -1,15 +1,54 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import GlassCard from './GlassCard';
-import { FiArrowRight, FiCheck } from 'react-icons/fi';
+import { FiArrowRight, FiCheck, FiHeart, FiShoppingCart } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import API from '../api/axios';
+import { useAuth } from '../context/AuthContext';
 
 const PlanCard = ({ plan, duration = 'monthly', index = 0 }) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const price = plan.pricing?.[duration] || 0;
   const durationLabels = {
     monthly: '/month',
     quarterly: '/quarter',
     halfYearly: '/6 months',
     yearly: '/year',
+  };
+
+  const ensureAuth = () => {
+    if (!user) {
+      toast.error('Please login first');
+      navigate('/login');
+      return false;
+    }
+    return true;
+  };
+
+  const addToCart = async () => {
+    if (!ensureAuth()) return;
+    try {
+      const { data } = await API.post('/cart', {
+        planId: plan._id,
+        duration,
+        personalTrainer: false
+      });
+      toast.success(data.message || 'Added to cart');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Unable to add to cart');
+    }
+  };
+
+  const addToWishlist = async () => {
+    if (!ensureAuth()) return;
+    try {
+      const { data } = await API.post('/wishlist', { planId: plan._id });
+      toast.success(data.message || 'Added to wishlist');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Unable to add to wishlist');
+    }
   };
 
   return (
@@ -80,6 +119,15 @@ const PlanCard = ({ plan, duration = 'monthly', index = 0 }) => {
             </li>
           )}
         </ul>
+
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          <button onClick={addToCart} className="glass-btn glass-btn-secondary w-full justify-center text-xs">
+            <FiShoppingCart size={14} /> Add Cart
+          </button>
+          <button onClick={addToWishlist} className="glass-btn glass-btn-secondary w-full justify-center text-xs">
+            <FiHeart size={14} /> Wishlist
+          </button>
+        </div>
 
         <Link
           to={`/plans/${plan.slug}`}

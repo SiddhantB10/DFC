@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { HiMenu, HiX } from 'react-icons/hi';
-import { FiUser, FiLogOut, FiGrid, FiShoppingBag } from 'react-icons/fi';
+import { FiUser, FiLogOut, FiGrid, FiShoppingBag, FiHeart, FiShield } from 'react-icons/fi';
 import Logo from './Logo';
 
 const Navbar = () => {
@@ -155,6 +155,26 @@ const Navbar = () => {
                       >
                         <FiShoppingBag size={16} /> My Orders
                       </Link>
+                      <Link
+                        to="/cart"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:text-primary-600 hover:bg-primary-50/50 rounded-xl mx-1.5 transition-all duration-200"
+                      >
+                        <FiShoppingBag size={16} /> Cart
+                      </Link>
+                      <Link
+                        to="/wishlist"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:text-primary-600 hover:bg-primary-50/50 rounded-xl mx-1.5 transition-all duration-200"
+                      >
+                        <FiHeart size={16} /> Wishlist
+                      </Link>
+                      {user?.role === 'admin' && (
+                        <Link
+                          to="/admin"
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:text-primary-600 hover:bg-primary-50/50 rounded-xl mx-1.5 transition-all duration-200"
+                        >
+                          <FiShield size={16} /> Admin Dashboard
+                        </Link>
+                      )}
                       <div className="h-px bg-slate-100 my-1.5 mx-4" />
                       <button
                         onClick={handleLogout}
@@ -226,6 +246,17 @@ const Navbar = () => {
                       <Link to="/profile" className="block px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:bg-white/40">
                         Profile
                       </Link>
+                      <Link to="/cart" className="block px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:bg-white/40">
+                        Cart
+                      </Link>
+                      <Link to="/wishlist" className="block px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:bg-white/40">
+                        Wishlist
+                      </Link>
+                      {user?.role === 'admin' && (
+                        <Link to="/admin" className="block px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:bg-white/40">
+                          Admin Dashboard
+                        </Link>
+                      )}
                       <button onClick={handleLogout} className="block w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50/50">
                         Logout
                       </button>

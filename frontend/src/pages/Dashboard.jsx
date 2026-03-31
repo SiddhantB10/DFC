@@ -13,17 +13,20 @@ const Dashboard = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [recommendedPlans, setRecommendedPlans] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsRes, ordersRes] = await Promise.all([
+        const [statsRes, ordersRes, recRes] = await Promise.all([
           API.get('/users/stats'),
           API.get('/orders'),
+          API.get('/plans/recommended/me'),
         ]);
         if (statsRes.data.success) setStats(statsRes.data.stats);
         if (ordersRes.data.success) setOrders(ordersRes.data.orders);
+        if (recRes.data.success) setRecommendedPlans(recRes.data.plans || []);
       } catch (err) {
         console.error('Dashboard fetch error:', err);
       } finally {
@@ -260,6 +263,28 @@ const Dashboard = () => {
                         </p>
                       </div>
                     </div>
+                  ))}
+                </div>
+              </GlassCard>
+            </div>
+          </ScrollReveal>
+        )}
+
+        {recommendedPlans.length > 0 && (
+          <ScrollReveal>
+            <div className="mt-8">
+              <GlassCard className="p-6 sm:p-8">
+                <h2 className="font-display font-bold text-xl text-slate-800 mb-6">Recommended For You</h2>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {recommendedPlans.map((plan) => (
+                    <Link key={plan._id} to={`/plans/${plan.slug}`} className="glass rounded-xl p-4 hover:bg-white/40 transition-all duration-300">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xl">{plan.icon}</span>
+                        <p className="text-sm font-semibold text-slate-700 truncate">{plan.name}</p>
+                      </div>
+                      <p className="text-xs text-slate-400 capitalize mb-2">{plan.category}</p>
+                      <p className="text-sm font-bold text-slate-800">₹{plan.pricing?.monthly?.toLocaleString('en-IN')}/month</p>
+                    </Link>
                   ))}
                 </div>
               </GlassCard>

@@ -31,6 +31,13 @@ cd backend && npm run seed
 cd backend && npm run dev
 ```
 
+### 3.1 Create Admin User (one time)
+```bash
+cd backend && npm run seed:admin
+```
+
+Use `ADMIN_EMAIL` and `ADMIN_PASSWORD` from `backend/.env`.
+
 ### 4. Start Frontend (in new terminal)
 ```bash
 cd frontend && npm run dev
@@ -98,6 +105,11 @@ vercel --prod
 - User dashboard with BMI, progress, subscription info
 - Profile management with fitness tracking
 - Contact form with WhatsApp integration
+- Cart module for pre-checkout plan selection
+- Wishlist module for saving plans
+- Admin dashboard with orders, support inbox, and sales report
+- Inventory slots for plans and trainer availability tracking
+- Recommended plans based on user fitness profile
 - Liquid glass UI with 3D animations
 - Fully responsive design
 
@@ -113,8 +125,21 @@ vercel --prod
 | POST | /api/orders | Create order |
 | GET | /api/orders | Get user orders |
 | GET | /api/orders/active | Get active subscription |
+| GET | /api/cart | Get current user cart |
+| POST | /api/cart | Add plan to cart |
+| DELETE | /api/cart/:itemId | Remove cart item |
+| DELETE | /api/cart | Clear cart |
+| GET | /api/wishlist | Get wishlist plans |
+| POST | /api/wishlist | Add plan to wishlist |
+| DELETE | /api/wishlist/:planId | Remove from wishlist |
+| GET | /api/plans/recommended/me | Get recommended plans |
 | GET | /api/users/profile | Get profile |
 | PUT | /api/users/profile | Update profile |
 | PUT | /api/users/change-password | Change password |
 | GET | /api/users/stats | Get dashboard stats |
 | POST | /api/contact | Submit contact form |
+| GET | /api/admin/dashboard | Admin summary dashboard |
+| GET | /api/admin/orders | Admin order list |
+| GET | /api/admin/reports/sales | Admin sales report |
+| GET | /api/admin/contacts | Admin contact inbox |
+| PUT | /api/admin/contacts/:id/status | Update contact status |

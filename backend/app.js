@@ -47,6 +47,9 @@ app.use('/api/plans', require('./routes/plans'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/contact', require('./routes/contact'));
+app.use('/api/cart', require('./routes/cart'));
+app.use('/api/wishlist', require('./routes/wishlist'));
+app.use('/api/admin', require('./routes/admin'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'DFC Health & Harmony API is running' });

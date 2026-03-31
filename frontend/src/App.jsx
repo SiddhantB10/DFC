@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 
 // Pages
 import Home from './pages/Home';
@@ -15,6 +16,9 @@ import Profile from './pages/Profile';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import MyOrders from './pages/MyOrders';
+import Cart from './pages/Cart';
+import Wishlist from './pages/Wishlist';
+import AdminDashboard from './pages/AdminDashboard';
 import { useAuth } from './context/AuthContext';
 import Logo from './components/Logo';
 import DumbbellBg from './components/DumbbellBg';
@@ -91,6 +95,30 @@ function App() {
                 <ProtectedRoute>
                   <PageWrapper><MyOrders /></PageWrapper>
                 </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cart"
+              element={
+                <ProtectedRoute>
+                  <PageWrapper><Cart /></PageWrapper>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/wishlist"
+              element={
+                <ProtectedRoute>
+                  <PageWrapper><Wishlist /></PageWrapper>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <PageWrapper><AdminDashboard /></PageWrapper>
+                </AdminRoute>
               }
             />
           </Routes>

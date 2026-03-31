@@ -57,6 +57,45 @@ const MyOrders = () => {
     }
   };
 
+  const printInvoice = () => {
+    if (!invoiceData) return;
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    if (!printWindow) return;
+
+    const html = `
+      <html>
+        <head>
+          <title>Invoice ${invoiceData.invoice?.invoiceNumber || ''}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 24px; color: #1f2937; }
+            h1 { margin: 0 0 8px; }
+            .muted { color: #6b7280; font-size: 12px; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+            .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; }
+          </style>
+        </head>
+        <body>
+          <h1>DFC Invoice</h1>
+          <p class="muted">Invoice #${invoiceData.invoice?.invoiceNumber || ''}</p>
+          <p class="muted">Issued on ${new Date(invoiceData.invoice?.issuedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+          <div class="grid">
+            <div class="card"><strong>Plan</strong><br/>${invoiceData.order?.plan?.name || '-'}</div>
+            <div class="card"><strong>Duration</strong><br/>${invoiceData.order?.duration || '-'}</div>
+            <div class="card"><strong>Amount Paid</strong><br/>₹${invoiceData.invoice?.total?.toLocaleString('en-IN') || '0'}</div>
+            <div class="card"><strong>Transaction ID</strong><br/>${invoiceData.payment?.razorpayPaymentId || 'N/A'}</div>
+          </div>
+          <p class="muted">Status: ${invoiceData.invoice?.status || '-'}</p>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen pt-24 flex items-center justify-center">
@@ -194,9 +233,14 @@ const MyOrders = () => {
               <p className="text-xs text-slate-400">
                 Issued on {new Date(invoiceData.invoice?.issuedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
               </p>
-              <span className="text-xs px-3 py-1 rounded-full bg-green-100 text-green-700 font-medium">
-                {invoiceData.invoice?.status}
-              </span>
+              <div className="flex items-center gap-2">
+                <button onClick={printInvoice} className="text-xs px-3 py-1 rounded-full bg-primary-50 text-primary-600 font-medium hover:bg-primary-100">
+                  Print / Download
+                </button>
+                <span className="text-xs px-3 py-1 rounded-full bg-green-100 text-green-700 font-medium">
+                  {invoiceData.invoice?.status}
+                </span>
+              </div>
             </div>
           </GlassCard>
         )}

@@ -61,6 +61,22 @@ const planSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  rating: {
+    type: Number,
+    default: 4.5,
+    min: 0,
+    max: 5
+  },
+  availableSlots: {
+    type: Number,
+    default: 100,
+    min: 0
+  },
+  trainerSlots: {
+    type: Number,
+    default: 30,
+    min: 0
+  },
   isActive: {
     type: Boolean,
     default: true

@@ -69,6 +69,14 @@ exports.createCheckoutOrder = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid duration selected' });
     }
 
+    if (plan.availableSlots <= 0) {
+      return res.status(400).json({ success: false, message: 'This plan is currently unavailable. Please try another plan.' });
+    }
+
+    if (trainerRequested && (!plan.personalTrainerAvailable || plan.trainerSlots <= 0)) {
+      return res.status(400).json({ success: false, message: 'Personal trainer slots are currently full for this plan.' });
+    }
+
     let trainerPrice = 0;
     if (trainerRequested && plan.personalTrainerAvailable) {
       trainerPrice = plan.personalTrainerPrice * monthsMap[duration];
@@ -233,6 +241,13 @@ exports.verifyPayment = async (req, res) => {
 
     order.invoice = invoice._id;
     await order.save();
+
+    await Plan.findByIdAndUpdate(order.plan, {
+      $inc: {
+        availableSlots: -1,
+        trainerSlots: order.personalTrainer ? -1 : 0
+      }
+    });
 
     const populatedOrder = await Order.findById(order._id)
       .populate('plan', 'name category icon color slug')
