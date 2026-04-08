@@ -19,6 +19,8 @@ import MyOrders from './pages/MyOrders';
 import Cart from './pages/Cart';
 import Wishlist from './pages/Wishlist';
 import AdminDashboard from './pages/AdminDashboard';
+import Store from './pages/Store';
+import ProductDetail from './pages/ProductDetail';
 import { useAuth } from './context/AuthContext';
 import Logo from './components/Logo';
 import DumbbellBg from './components/DumbbellBg';
@@ -69,6 +71,8 @@ function App() {
             <Route path="/" element={<PageWrapper><HomeSwitcher /></PageWrapper>} />
             <Route path="/login" element={<PageWrapper><Login /></PageWrapper>} />
             <Route path="/register" element={<PageWrapper><Register /></PageWrapper>} />
+            <Route path="/store" element={<PageWrapper><Store /></PageWrapper>} />
+            <Route path="/store/:slug" element={<PageWrapper><ProductDetail /></PageWrapper>} />
             <Route path="/plans" element={<PageWrapper><Plans /></PageWrapper>} />
             <Route path="/plans/:slug" element={<PageWrapper><PlanDetail /></PageWrapper>} />
             <Route path="/about" element={<PageWrapper><About /></PageWrapper>} />

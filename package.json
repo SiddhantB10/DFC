@@ -1,0 +1,20 @@
+{
+  "name": "dfc-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "seed:plans": "npm run seed --prefix backend",
+    "seed:products": "npm run seed:products --prefix backend",
+    "seed:admin": "npm run seed:admin --prefix backend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "dependencies": {
+    "dfc-workspace": "file:"
+  }
+}

@@ -10,6 +10,10 @@ const wishlistSchema = new mongoose.Schema({
   plans: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Plan'
+  }],
+  products: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product'
   }]
 }, { timestamps: true });
 

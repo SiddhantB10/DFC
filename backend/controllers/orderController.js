@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const Razorpay = require('razorpay');
 const Order = require('../models/Order');
 const Plan = require('../models/Plan');
+const Product = require('../models/Product');
 const Payment = require('../models/Payment');
 const Invoice = require('../models/Invoice');
 
@@ -56,59 +57,90 @@ exports.createCheckoutOrder = async (req, res) => {
       });
     }
 
-    const { planId, duration, personalTrainer } = req.body;
-    const trainerRequested = personalTrainer === true;
-
-    const plan = await Plan.findById(planId);
-    if (!plan) {
-      return res.status(404).json({ success: false, message: 'Plan not found' });
+    const { planId, productId, duration, personalTrainer, quantity = 1, color, size } = req.body;
+    
+    if (!planId && !productId) {
+      return res.status(400).json({ success: false, message: 'Either planId or productId is required' });
     }
+    
+    let totalAmount = 0;
+    let orderData = { user: req.user._id, currency: 'INR', status: 'pending', paymentStatus: 'pending' };
+    let notes = { userId: req.user._id.toString() };
 
-    const planPrice = plan.pricing[duration];
-    if (!planPrice || !monthsMap[duration]) {
-      return res.status(400).json({ success: false, message: 'Invalid duration selected' });
+    if (planId) {
+      // Plan checkout
+      const trainerRequested = personalTrainer === true;
+
+
+
+
+
+
+      const plan = await Plan.findById(planId);
+      if (!plan) {
+        return res.status(404).json({ success: false, message: 'Plan not found' });
+      }
+
+      const planPrice = plan.pricing[duration];
+      if (!planPrice || !monthsMap[duration]) {
+        return res.status(400).json({ success: false, message: 'Invalid duration selected' });
+      }
+
+      if (plan.availableSlots <= 0) {
+        return res.status(400).json({ success: false, message: 'This plan is currently unavailable. Please try another plan.' });
+      }
+
+      if (trainerRequested && (!plan.personalTrainerAvailable || plan.trainerSlots <= 0)) {
+        return res.status(400).json({ success: false, message: 'Personal trainer slots are currently full for this plan.' });
+      }
+
+      let trainerPrice = 0;
+      if (trainerRequested && plan.personalTrainerAvailable) {
+        trainerPrice = plan.personalTrainerPrice * monthsMap[duration];
+      }
+
+      totalAmount = planPrice + trainerPrice;
+      orderData.plan = planId;
+      orderData.duration = duration;
+      orderData.personalTrainer = trainerRequested;
+      orderData.planPrice = planPrice;
+      orderData.trainerPrice = trainerPrice;
+      orderData.totalAmount = totalAmount;
+      orderData.startDate = new Date();
+      notes.planId = plan._id.toString();
+    } else if (productId) {
+      // Product checkout
+      const product = await Product.findById(productId);
+      if (!product) {
+        return res.status(404).json({ success: false, message: 'Product not found' });
+      }
+
+      if (product.stock < quantity) {
+        return res.status(400).json({ success: false, message: 'Insufficient stock available' });
+      }
+
+      const unitPrice = product.discountPrice || product.price;
+      totalAmount = unitPrice * quantity;
+      orderData.product = productId;
+      orderData.quantity = quantity;
+      orderData.color = color || null;
+      orderData.size = size || null;
+      orderData.unitPrice = unitPrice;
+      orderData.totalAmount = totalAmount;
+      orderData.startDate = new Date();
+      notes.productId = product._id.toString();
+      notes.quantity = quantity;
     }
-
-    if (plan.availableSlots <= 0) {
-      return res.status(400).json({ success: false, message: 'This plan is currently unavailable. Please try another plan.' });
-    }
-
-    if (trainerRequested && (!plan.personalTrainerAvailable || plan.trainerSlots <= 0)) {
-      return res.status(400).json({ success: false, message: 'Personal trainer slots are currently full for this plan.' });
-    }
-
-    let trainerPrice = 0;
-    if (trainerRequested && plan.personalTrainerAvailable) {
-      trainerPrice = plan.personalTrainerPrice * monthsMap[duration];
-    }
-
-    const totalAmount = planPrice + trainerPrice;
+    
     const amountPaise = Math.round(totalAmount * 100);
 
-    const order = await Order.create({
-      user: req.user._id,
-      plan: planId,
-      duration,
-      personalTrainer: trainerRequested,
-      planPrice,
-      trainerPrice,
-      totalAmount,
-      currency: 'INR',
-      status: 'pending',
-      paymentStatus: 'pending',
-      startDate: new Date(),
-      endDate: new Date()
-    });
+    const order = await Order.create(orderData);
 
     const gatewayOrder = await razorpay.orders.create({
       amount: amountPaise,
       currency: 'INR',
       receipt: order._id.toString(),
-      notes: {
-        userId: req.user._id.toString(),
-        planId: plan._id.toString(),
-        duration
-      }
+      notes
     });
 
     order.gatewayOrderId = gatewayOrder.id;
@@ -222,17 +254,30 @@ exports.verifyPayment = async (req, res) => {
       invoiceNumber = getInvoiceNumber();
     }
 
-    const plan = await Plan.findById(order.plan).select('name');
-    const invoice = await Invoice.create({
+      // Create invoice items based on order type
+      let invoiceItems = [];
+      if (order.plan) {
+        const plan = await Plan.findById(order.plan).select('name');
+        invoiceItems = [
+          { label: 'Plan', value: plan?.name || 'Plan' },
+          { label: 'Duration', value: order.duration },
+          { label: 'Personal Trainer', value: order.personalTrainer ? 'Yes' : 'No' }
+        ];
+      } else if (order.product) {
+        const product = await Product.findById(order.product).select('name');
+        invoiceItems = [
+          { label: 'Product', value: product?.name || 'Product' },
+          { label: 'Quantity', value: order.quantity },
+          { label: 'Price', value: `₹${order.unitPrice}` }
+        ];
+      }
+    
+      const invoice = await Invoice.create({
       invoiceNumber,
       order: order._id,
       payment: payment._id,
       user: req.user._id,
-      items: [
-        { label: 'Plan', value: plan?.name || 'Plan' },
-        { label: 'Duration', value: order.duration },
-        { label: 'Personal Trainer', value: order.personalTrainer ? 'Yes' : 'No' }
-      ],
+        items: invoiceItems,
       subtotal: order.totalAmount,
       tax: 0,
       total: order.totalAmount,
@@ -242,15 +287,25 @@ exports.verifyPayment = async (req, res) => {
     order.invoice = invoice._id;
     await order.save();
 
-    await Plan.findByIdAndUpdate(order.plan, {
-      $inc: {
-        availableSlots: -1,
-        trainerSlots: order.personalTrainer ? -1 : 0
+      // Update stock/slots based on order type
+      if (order.plan) {
+        await Plan.findByIdAndUpdate(order.plan, {
+          $inc: {
+            availableSlots: -1,
+            trainerSlots: order.personalTrainer ? -1 : 0
+          }
+        });
+      } else if (order.product) {
+        await Product.findByIdAndUpdate(order.product, {
+          $inc: {
+            stock: -order.quantity
+          }
+        });
       }
-    });
 
     const populatedOrder = await Order.findById(order._id)
-      .populate('plan', 'name category icon color slug')
+        .populate('plan', 'name category icon color slug')
+        .populate('product', 'name price image')
       .populate('invoice', 'invoiceNumber issuedAt total status');
 
     res.json({ success: true, message: 'Payment verified successfully', order: populatedOrder, invoice });
@@ -336,6 +391,7 @@ exports.getMyOrders = async (req, res) => {
   try {
     const orders = await Order.find({ user: req.user._id })
       .populate('plan', 'name category icon color slug')
+      .populate('product', 'name image price')
       .populate('invoice', 'invoiceNumber issuedAt total status')
       .sort({ createdAt: -1 });
 
@@ -351,6 +407,7 @@ exports.getOrder = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
       .populate('plan')
+      .populate('product')
       .populate('user', 'name email phone')
       .populate('invoice', 'invoiceNumber issuedAt total status');
 
@@ -394,6 +451,7 @@ exports.getInvoiceByOrder = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
       .populate('plan', 'name category')
+      .populate('product', 'name price image')
       .populate('invoice');
 
     if (!order) {
@@ -418,6 +476,11 @@ exports.getInvoiceByOrder = async (req, res) => {
         duration: order.duration,
         totalAmount: order.totalAmount,
         plan: order.plan,
+        product: order.product,
+        quantity: order.quantity,
+        unitPrice: order.unitPrice,
+        color: order.color,
+        size: order.size,
         personalTrainer: order.personalTrainer,
         startDate: order.startDate,
         endDate: order.endDate,

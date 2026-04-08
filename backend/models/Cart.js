@@ -3,17 +3,36 @@ const mongoose = require('mongoose');
 const cartItemSchema = new mongoose.Schema({
   plan: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Plan',
-    required: true
+    ref: 'Plan'
   },
+  product: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product'
+  },
+  quantity: {
+    type: Number,
+    default: 1,
+    min: 1
+  },
+  // For plans
   duration: {
     type: String,
-    enum: ['monthly', 'quarterly', 'halfYearly', 'yearly'],
-    required: true
+    enum: ['monthly', 'quarterly', 'halfYearly', 'yearly']
   },
   personalTrainer: {
     type: Boolean,
     default: false
+  },
+  // For products
+  color: {
+    type: String
+  },
+  size: {
+    type: String
+  },
+  price: {
+    type: Number,
+    required: true
   }
 }, { _id: true, timestamps: true });
 

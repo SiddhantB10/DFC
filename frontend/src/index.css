@@ -353,6 +353,54 @@ body::before {
     transition-duration: 0.1s;
   }
 
+  .glass-btn-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 50%, #10b981 100%);
+    background-size: 200% 200%;
+    color: white;
+    box-shadow:
+      0 4px 20px rgba(16, 185, 129, 0.30),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .glass-btn-success:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow:
+      0 12px 40px rgba(16, 185, 129, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    background-position: 100% 0;
+  }
+
+  .glass-btn-success:active {
+    transform: translateY(-1px) scale(0.99);
+    transition-duration: 0.1s;
+  }
+
+  .glass-btn-wishlist {
+    background: rgba(244, 63, 94, 0.12);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    color: #f43f5e;
+    border: 1.5px solid rgba(244, 63, 94, 0.3);
+    box-shadow:
+      0 4px 16px rgba(244, 63, 94, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+
+  .glass-btn-wishlist:hover {
+    background: rgba(244, 63, 94, 0.25);
+    border-color: rgba(244, 63, 94, 0.5);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow:
+      0 12px 40px rgba(244, 63, 94, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    color: #e11d48;
+  }
+
+  .glass-btn-wishlist:active {
+    transform: translateY(-1px) scale(0.99);
+    transition-duration: 0.1s;
+  }
+
   /* --- Gradient Text --- */
   .gradient-text {
     background: linear-gradient(135deg, #14b8a6 0%, #8b5cf6 50%, #f97316 100%);

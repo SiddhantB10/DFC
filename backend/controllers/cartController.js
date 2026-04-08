@@ -1,36 +1,52 @@
 const Cart = require('../models/Cart');
 const Plan = require('../models/Plan');
+const Product = require('../models/Product');
 
 const monthsMap = { monthly: 1, quarterly: 3, halfYearly: 6, yearly: 12 };
 
-const calcItemAmount = (plan, duration, personalTrainer) => {
-  const planPrice = plan?.pricing?.[duration] || 0;
-  const trainerPrice = personalTrainer ? (plan.personalTrainerPrice || 0) * monthsMap[duration] : 0;
-  return { planPrice, trainerPrice, total: planPrice + trainerPrice };
+const calcItemAmount = (item) => {
+  if (item.plan) {
+    // Plan pricing
+    const planPrice = item.plan?.pricing?.[item.duration] || 0;
+    const trainerPrice = item.personalTrainer ? (item.plan.personalTrainerPrice || 0) * monthsMap[item.duration] : 0;
+    return { amount: planPrice + trainerPrice, type: 'plan' };
+  } else if (item.product) {
+    // Product pricing
+    return { amount: item.price * item.quantity, type: 'product' };
+  }
+  return { amount: 0, type: 'unknown' };
 };
 
 exports.getMyCart = async (req, res) => {
   try {
-    const cart = await Cart.findOne({ user: req.user._id }).populate('items.plan');
+    const cart = await Cart.findOne({ user: req.user._id })
+      .populate('items.plan')
+      .populate('items.product');
 
     if (!cart) {
       return res.json({ success: true, items: [], totals: { subtotal: 0 } });
     }
 
     const items = cart.items
-      .filter((item) => item.plan)
+      .filter((item) => item.plan || item.product)
       .map((item) => {
-        const pricing = calcItemAmount(item.plan, item.duration, item.personalTrainer);
+        const pricing = calcItemAmount(item);
         return {
           _id: item._id,
           plan: item.plan,
+          product: item.product,
+          quantity: item.quantity,
           duration: item.duration,
           personalTrainer: item.personalTrainer,
-          pricing
+          color: item.color,
+          size: item.size,
+          price: item.price,
+          type: item.product ? 'product' : 'plan',
+          amount: pricing.amount
         };
       });
 
-    const subtotal = items.reduce((sum, item) => sum + item.pricing.total, 0);
+    const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
 
     res.json({ success: true, items, totals: { subtotal } });
   } catch (error) {
@@ -41,19 +57,15 @@ exports.getMyCart = async (req, res) => {
 
 exports.addToCart = async (req, res) => {
   try {
-    const { planId, duration, personalTrainer } = req.body;
+    const { planId, productId, quantity = 1, color, size, duration, personalTrainer } = req.body;
 
-    if (!planId || !duration) {
-      return res.status(400).json({ success: false, message: 'planId and duration are required' });
+    // Validate input
+    if (planId && productId) {
+      return res.status(400).json({ success: false, message: 'Cannot add both plan and product' });
     }
 
-    if (!monthsMap[duration]) {
-      return res.status(400).json({ success: false, message: 'Invalid duration' });
-    }
-
-    const plan = await Plan.findById(planId);
-    if (!plan || !plan.isActive) {
-      return res.status(404).json({ success: false, message: 'Plan not found' });
+    if (!planId && !productId) {
+      return res.status(400).json({ success: false, message: 'planId or productId is required' });
     }
 
     let cart = await Cart.findOne({ user: req.user._id });
@@ -61,23 +73,80 @@ exports.addToCart = async (req, res) => {
       cart = await Cart.create({ user: req.user._id, items: [] });
     }
 
-    const trainerRequested = personalTrainer === true;
-    const existingIndex = cart.items.findIndex(
-      (item) =>
-        item.plan.toString() === planId &&
-        item.duration === duration &&
-        item.personalTrainer === trainerRequested
-    );
+    // Handle Plan
+    if (planId) {
+      if (!duration) {
+        return res.status(400).json({ success: false, message: 'duration is required for plans' });
+      }
 
-    if (existingIndex !== -1) {
-      return res.status(200).json({ success: true, message: 'Plan already in cart' });
+      if (!monthsMap[duration]) {
+        return res.status(400).json({ success: false, message: 'Invalid duration' });
+      }
+
+      const plan = await Plan.findById(planId);
+      if (!plan || !plan.isActive) {
+        return res.status(404).json({ success: false, message: 'Plan not found' });
+      }
+
+      const trainerRequested = personalTrainer === true;
+      const existingIndex = cart.items.findIndex(
+        (item) =>
+          item.plan &&
+          item.plan.toString() === planId &&
+          item.duration === duration &&
+          item.personalTrainer === trainerRequested
+      );
+
+      if (existingIndex !== -1) {
+        return res.status(200).json({ success: true, message: 'Plan already in cart' });
+      }
+
+      const planPrice = plan?.pricing?.[duration] || 0;
+      const trainerPrice = trainerRequested ? (plan.personalTrainerPrice || 0) * monthsMap[duration] : 0;
+      const totalPrice = planPrice + trainerPrice;
+
+      cart.items.push({
+        plan: planId,
+        duration,
+        personalTrainer: trainerRequested,
+        price: totalPrice
+      });
     }
 
-    cart.items.push({
-      plan: planId,
-      duration,
-      personalTrainer: trainerRequested
-    });
+    // Handle Product
+    if (productId) {
+      const product = await Product.findById(productId);
+      if (!product || !product.isActive) {
+        return res.status(404).json({ success: false, message: 'Product not found' });
+      }
+
+      if (product.stock < quantity) {
+        return res.status(400).json({ success: false, message: 'Insufficient stock' });
+      }
+
+      // Check for existing product
+      const existingIndex = cart.items.findIndex(
+        (item) =>
+          item.product &&
+          item.product.toString() === productId &&
+          item.color === (color || null) &&
+          item.size === (size || null)
+      );
+
+      if (existingIndex !== -1) {
+        // Update quantity
+        cart.items[existingIndex].quantity += quantity;
+      } else {
+        // Add new item
+        cart.items.push({
+          product: productId,
+          quantity,
+          color: color || null,
+          size: size || null,
+          price: product.discountPrice || product.price
+        });
+      }
+    }
 
     await cart.save();
 
@@ -103,6 +172,41 @@ exports.removeCartItem = async (req, res) => {
   } catch (error) {
     console.error('Remove cart item error:', error);
     res.status(500).json({ success: false, message: 'Error removing cart item' });
+  }
+};
+
+exports.updateCartItem = async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const { quantity } = req.body;
+
+    const cart = await Cart.findOne({ user: req.user._id });
+
+    if (!cart) {
+      return res.status(404).json({ success: false, message: 'Cart not found' });
+    }
+
+    const item = cart.items.find((item) => item._id.toString() === itemId);
+
+    if (!item) {
+      return res.status(404).json({ success: false, message: 'Item not found in cart' });
+    }
+
+    // Only products have quantity updates
+    if (item.product) {
+      const product = await Product.findById(item.product);
+      if (quantity > (product?.stock || 0)) {
+        return res.status(400).json({ success: false, message: 'Insufficient stock' });
+      }
+      item.quantity = Math.max(1, quantity);
+    }
+
+    await cart.save();
+
+    res.json({ success: true, message: 'Cart item updated' });
+  } catch (error) {
+    console.error('Update cart item error:', error);
+    res.status(500).json({ success: false, message: 'Error updating cart item' });
   }
 };
 

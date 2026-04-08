@@ -11,7 +11,13 @@ const configuredOrigins = (process.env.FRONTEND_URL || '')
 
 const isAllowedOrigin = (origin) => {
   if (!origin) return true;
-  if (origin === 'http://localhost:5173') return true;
+  try {
+    const parsed = new URL(origin);
+    if (parsed.hostname === 'localhost') return true;
+    if (parsed.hostname === '127.0.0.1') return true;
+  } catch (error) {
+    return false;
+  }
   if (configuredOrigins.includes(origin)) return true;
 
   if (process.env.ALLOW_VERCEL_PREVIEW === 'true') {
@@ -44,6 +50,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/plans', require('./routes/plans'));
+app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/contact', require('./routes/contact'));

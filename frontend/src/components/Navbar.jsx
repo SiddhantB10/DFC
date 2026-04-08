@@ -27,6 +27,7 @@ const Navbar = () => {
 
   const navLinks = [
     { to: '/', label: user ? 'Dashboard' : 'Home' },
+    { to: '/store', label: 'Store' },
     { to: '/plans', label: 'Plans' },
     { to: '/about', label: 'About' },
     { to: '/contact', label: 'Contact' },

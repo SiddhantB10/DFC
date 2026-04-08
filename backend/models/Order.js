@@ -8,21 +8,40 @@ const orderSchema = new mongoose.Schema({
   },
   plan: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Plan',
-    required: true
+    ref: 'Plan'
+  },
+  product: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product'
   },
   duration: {
     type: String,
-    required: true,
     enum: ['monthly', 'quarterly', 'halfYearly', 'yearly']
   },
   personalTrainer: {
     type: Boolean,
     default: false
   },
+  quantity: {
+    type: Number,
+    default: 1,
+    min: 1
+  },
+  color: {
+    type: String,
+    default: null
+  },
+  size: {
+    type: String,
+    default: null
+  },
+  unitPrice: {
+    type: Number,
+    default: 0
+  },
   planPrice: {
     type: Number,
-    required: true
+    default: 0
   },
   trainerPrice: {
     type: Number,
@@ -63,8 +82,7 @@ const orderSchema = new mongoose.Schema({
     default: Date.now
   },
   endDate: {
-    type: Date,
-    required: true
+    type: Date
   },
   whatsappConnected: {
     type: Boolean,
@@ -76,10 +94,10 @@ const orderSchema = new mongoose.Schema({
 
 // Calculate end date based on duration before saving
 orderSchema.pre('save', function(next) {
-  if (this.isNew) {
+  if (this.isNew && this.duration) {
     const start = this.startDate || new Date();
     const end = new Date(start);
-    
+
     switch(this.duration) {
       case 'monthly':
         end.setMonth(end.getMonth() + 1);
@@ -93,8 +111,10 @@ orderSchema.pre('save', function(next) {
       case 'yearly':
         end.setFullYear(end.getFullYear() + 1);
         break;
+      default:
+        break;
     }
-    
+
     this.endDate = end;
   }
   next();

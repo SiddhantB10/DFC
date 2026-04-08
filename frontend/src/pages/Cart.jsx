@@ -34,7 +34,7 @@ const Cart = () => {
   }, []);
 
   const subtotal = useMemo(
-    () => items.reduce((sum, item) => sum + (item.pricing?.total || 0), 0),
+    () => items.reduce((sum, item) => sum + (item.amount || 0), 0),
     [items]
   );
 
@@ -62,12 +62,27 @@ const Cart = () => {
     setProcessingItemId(item._id);
 
     try {
-      const checkoutRes = await API.post('/orders/checkout', {
-        planId: item.plan._id,
-        duration: item.duration,
-        personalTrainer: item.personalTrainer
-      });
+        // Determine checkout payload based on item type
+        let checkoutPayload = {};
+        if (item.type === 'plan') {
+          checkoutPayload = {
+            planId: item.plan._id,
+            duration: item.duration,
+            personalTrainer: item.personalTrainer
+          };
+        } else if (item.type === 'product') {
+          checkoutPayload = {
+            productId: item.product._id,
+            quantity: item.quantity,
+            color: item.color,
+            size: item.size
+          };
+        } else {
+          throw new Error('Unknown item type');
+        }
 
+
+        const checkoutRes = await API.post('/orders/checkout', checkoutPayload);
       const data = checkoutRes.data;
       if (!data.success) {
         throw new Error('Unable to create payment order');
@@ -78,7 +93,9 @@ const Cart = () => {
         amount: data.razorpayOrder.amount,
         currency: data.razorpayOrder.currency,
         name: 'DFC: Health & Harmony',
-        description: `${item.plan.name} (${item.duration})`,
+        description: item.type === 'plan'
+          ? `${item.plan?.name || 'Plan'} (${item.duration})`
+          : `${item.product?.name || 'Product'} x ${item.quantity}`,
         order_id: data.razorpayOrder.id,
         prefill: {
           name: user.name,
@@ -173,10 +190,15 @@ const Cart = () => {
             <GlassCard className="p-12 text-center">
               <FiShoppingBag className="mx-auto text-slate-300 mb-4" size={48} />
               <h3 className="font-display font-bold text-lg text-slate-700 mb-2">Your cart is empty</h3>
-              <p className="text-slate-400 mb-6">Add plans to cart and continue to checkout.</p>
-              <Link to="/plans" className="glass-btn glass-btn-primary">
-                Browse Plans
-              </Link>
+              <p className="text-slate-400 mb-6">Add plans or products to cart and continue to checkout.</p>
+              <div className="flex items-center justify-center gap-3 flex-wrap">
+                <Link to="/plans" className="glass-btn glass-btn-primary">
+                  Browse Plans
+                </Link>
+                <Link to="/store" className="glass-btn glass-btn-secondary">
+                  Browse Store
+                </Link>
+              </div>
             </GlassCard>
           </ScrollReveal>
         ) : (
@@ -187,19 +209,31 @@ const Cart = () => {
                   <GlassCard className="p-6" hover3D={false}>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
-                        <span className="text-3xl">{item.plan?.icon || '📋'}</span>
+                        <span className="text-3xl">
+                          {item.type === 'plan' ? (item.plan?.icon || '📋') : '🛍️'}
+                        </span>
                         <div>
-                          <h3 className="font-display font-semibold text-slate-800">{item.plan?.name || 'Plan'}</h3>
-                          <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-500">
-                            <span className="capitalize">{item.duration}</span>
-                            <span>•</span>
-                            <span>{item.personalTrainer ? 'With Personal Trainer' : 'Without Personal Trainer'}</span>
-                          </div>
+                          <h3 className="font-display font-semibold text-slate-800">
+                            {item.type === 'plan' ? (item.plan?.name || 'Plan') : (item.product?.name || 'Product')}
+                          </h3>
+                          {item.type === 'plan' ? (
+                            <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-500">
+                              <span className="capitalize">{item.duration}</span>
+                              <span>•</span>
+                              <span>{item.personalTrainer ? 'With Personal Trainer' : 'Without Personal Trainer'}</span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-500">
+                              <span>Qty: {item.quantity}</span>
+                              {item.color && (<><span>•</span><span>Color: {item.color}</span></>)}
+                              {item.size && (<><span>•</span><span>Size: {item.size}</span></>)}
+                            </div>
+                          )}
                         </div>
                       </div>
 
                       <div className="text-right">
-                        <p className="font-display font-bold text-lg text-slate-800">₹{item.pricing?.total?.toLocaleString('en-IN')}</p>
+                        <p className="font-display font-bold text-lg text-slate-800">₹{(item.amount || 0).toLocaleString('en-IN')}</p>
                         <div className="flex justify-end gap-2 mt-2">
                           <button
                             onClick={() => removeItem(item._id)}
