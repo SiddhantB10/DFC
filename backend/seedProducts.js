@@ -526,14 +526,89 @@ const seedProducts = async () => {
       }
     ];
 
-    const productsWithoutImages = products.map((product) => ({
-      ...product,
-      image: '',
-      images: [],
-      colorImageMap: {}
-    }));
+    const productsWithImages = products.map((product) => {
+      // Add image for resistance bands
+      if (product.slug === 'dfc-resistance-bands-set') {
+        return {
+          ...product,
+          image: '/products/resistance-bands.jpg',
+          images: ['/products/resistance-bands.jpg'],
+          colorImageMap: {}
+        };
+      }
+      // Add image for wrist wraps
+      if (product.slug === 'dfc-wrist-wraps-support') {
+        return {
+          ...product,
+          image: '/products/wrist-wrap.png',
+          images: ['/products/wrist-wrap.png'],
+          colorImageMap: {}
+        };
+      }
+      // Add image for water bottle
+      if (product.slug === 'dfc-water-bottle-1l') {
+        return {
+          ...product,
+          image: '/products/water-bottle.jpg',
+          images: ['/products/water-bottle.jpg'],
+          colorImageMap: {}
+        };
+      }
+      // Add image for sports gym bag
+      if (product.slug === 'dfc-sports-gym-bag') {
+        return {
+          ...product,
+          image: '/products/bag.png',
+          images: ['/products/bag.png'],
+          colorImageMap: {}
+        };
+      }
+      // Add image for premium yoga mat
+      if (product.slug === 'dfc-premium-yoga-mat') {
+        return {
+          ...product,
+          image: '/products/mat.png',
+          images: ['/products/mat.png'],
+          colorImageMap: {}
+        };
+      }
+      // Add image for digital body weighing scale
+      if (product.slug === 'dfc-digital-body-weighing-scale') {
+        return {
+          ...product,
+          image: '/products/ws.png',
+          images: ['/products/ws.png'],
+          colorImageMap: {}
+        };
+      }
+      // Add image for body composition analyzer scale
+      if (product.slug === 'dfc-body-composition-analyzer') {
+        return {
+          ...product,
+          image: '/products/ws.png',
+          images: ['/products/ws.png'],
+          colorImageMap: {}
+        };
+      }
+      // Add image for crossover machine
+      if (product.slug === 'dfc-crossover-machine') {
+        return {
+          ...product,
+          image: '/products/cm.png',
+          images: ['/products/cm.png'],
+          colorImageMap: {}
+        };
+      }
+      // All other products remain with empty images
+      return {
+        ...product,
+        image: '',
+        images: [],
+        colorImageMap: {}
+      };
+    });
 
-    const createdProducts = await Product.create(productsWithoutImages);
+    const createdProducts = await Product.create(productsWithImages);
     console.log(`✅ Created ${createdProducts.length} products`);
 
     console.log('🎉 Store seeding completed successfully!');

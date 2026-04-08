@@ -15,7 +15,15 @@ const ProductCard = ({ product }) => {
         <span className="absolute top-3 left-3 z-10 inline-flex items-center rounded-full bg-white/85 backdrop-blur px-2.5 py-1 text-[10px] font-bold tracking-[0.22em] text-slate-700 shadow-sm">
           DFC
         </span>
-        <span className="text-slate-400 text-sm tracking-wide uppercase font-semibold">No Image</span>
+        {product.image ? (
+          <img
+            src={product.image}
+            alt={product.name}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <span className="text-slate-400 text-sm tracking-wide uppercase font-semibold">No Image</span>
+        )}
         {discountPercent > 0 && (
           <div className="absolute top-3 right-3 bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
             -{discountPercent}%

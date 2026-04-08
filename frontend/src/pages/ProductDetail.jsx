@@ -190,7 +190,15 @@ const ProductDetail = () => {
                 <span className="absolute top-4 left-4 z-10 inline-flex items-center rounded-full bg-white/85 backdrop-blur px-3 py-1 text-[11px] font-bold tracking-[0.22em] text-slate-700 shadow-sm">
                   DFC
                 </span>
-                <span className="text-slate-400 text-lg tracking-wide uppercase font-semibold">No Image</span>
+                {product.image ? (
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="text-slate-400 text-lg tracking-wide uppercase font-semibold">No Image</span>
+                )}
                 {discount > 0 && (
                   <div className="absolute top-4 right-4 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-full text-lg font-bold shadow-lg">
                     -{discount}%
@@ -416,7 +424,15 @@ const ProductDetail = () => {
                       <span className="absolute top-3 left-3 z-10 inline-flex items-center rounded-full bg-white/85 backdrop-blur px-2.5 py-1 text-[10px] font-bold tracking-[0.22em] text-slate-700 shadow-sm">
                         DFC
                       </span>
-                      <span className="text-slate-400 text-sm tracking-wide uppercase font-semibold">No Image</span>
+                      {prod.image ? (
+                        <img
+                          src={prod.image}
+                          alt={prod.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-slate-400 text-sm tracking-wide uppercase font-semibold">No Image</span>
+                      )}
                     </div>
                     <div className="p-4">
                       <h3 className="font-semibold text-slate-800 group-hover:text-primary-600 line-clamp-2 mb-2 text-left text-sm">
