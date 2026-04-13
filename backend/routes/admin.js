@@ -7,6 +7,8 @@ const {
   getAllUsers,
   getAllContacts,
   updateContactStatus,
+  updateContactPriority,
+  replyToContact,
   getSalesReport
 } = require('../controllers/adminController');
 
@@ -17,6 +19,8 @@ router.get('/orders', getAllOrders);
 router.get('/users', getAllUsers);
 router.get('/contacts', getAllContacts);
 router.put('/contacts/:id/status', updateContactStatus);
+router.put('/contacts/:id/priority', updateContactPriority);
+router.put('/contacts/:id/reply', replyToContact);
 router.get('/reports/sales', getSalesReport);
 
 module.exports = router;

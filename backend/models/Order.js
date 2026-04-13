@@ -51,6 +51,25 @@ const orderSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  originalAmount: {
+    type: Number,
+    default: 0
+  },
+  pointsRedeemed: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  loyaltyDiscount: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  pointsEarned: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
   currency: {
     type: String,
     default: 'INR'

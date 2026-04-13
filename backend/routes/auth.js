@@ -7,7 +7,15 @@ const { protect } = require('../middleware/auth');
 router.post('/register', [
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('email').isEmail().withMessage('Valid email is required'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('password')
+    .isStrongPassword({
+      minLength: 8,
+      minLowercase: 1,
+      minUppercase: 1,
+      minNumbers: 0,
+      minSymbols: 0
+    })
+    .withMessage('Password must be at least 8 characters and include uppercase and lowercase letters'),
   body('phone').matches(/^\d{10}$/).withMessage('Valid 10-digit phone number is required'),
   body('age').isInt({ min: 14, max: 100 }).withMessage('Age must be between 14 and 100'),
   body('gender').isIn(['male', 'female', 'other']).withMessage('Gender is required'),

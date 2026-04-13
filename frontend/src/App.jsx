@@ -15,6 +15,8 @@ import PlanDetail from './pages/PlanDetail';
 import Profile from './pages/Profile';
 import About from './pages/About';
 import Contact from './pages/Contact';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsConditions from './pages/TermsConditions';
 import MyOrders from './pages/MyOrders';
 import Cart from './pages/Cart';
 import Wishlist from './pages/Wishlist';
@@ -77,6 +79,8 @@ function App() {
             <Route path="/plans/:slug" element={<PageWrapper><PlanDetail /></PageWrapper>} />
             <Route path="/about" element={<PageWrapper><About /></PageWrapper>} />
             <Route path="/contact" element={<PageWrapper><Contact /></PageWrapper>} />
+            <Route path="/privacy-policy" element={<PageWrapper><PrivacyPolicy /></PageWrapper>} />
+            <Route path="/terms-conditions" element={<PageWrapper><TermsConditions /></PageWrapper>} />
             <Route
               path="/dashboard"
               element={

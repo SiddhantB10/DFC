@@ -10,6 +10,7 @@ import Logo from '../components/Logo';
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const [acceptedPolicies, setAcceptedPolicies] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -22,6 +23,9 @@ const Login = () => {
     e.preventDefault();
     if (!formData.email || !formData.password) {
       return toast.error('Please fill in all fields');
+    }
+    if (!acceptedPolicies) {
+      return toast.error('Please accept Privacy Policy and Terms & Conditions');
     }
     setLoading(true);
     try {
@@ -103,6 +107,21 @@ const Login = () => {
                   'Sign In'
                 )}
               </button>
+
+              <label className="flex items-start gap-2 text-xs text-slate-500 mt-2">
+                <input
+                  type="checkbox"
+                  checked={acceptedPolicies}
+                  onChange={(e) => setAcceptedPolicies(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span>
+                  I agree to the{' '}
+                  <Link to="/privacy-policy" className="text-primary-600 font-semibold hover:text-primary-700">Privacy Policy</Link>
+                  {' '}and{' '}
+                  <Link to="/terms-conditions" className="text-primary-600 font-semibold hover:text-primary-700">Terms & Conditions</Link>.
+                </span>
+              </label>
             </form>
 
             <p className="text-center text-sm text-slate-500 mt-6">

@@ -182,13 +182,13 @@ const Plans = () => {
 
         {/* Plans Grid */}
         {loading ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 auto-rows-fr gap-6 items-stretch">
             {[1, 2, 3].map((i) => (
               <div key={i} className="glass-card p-8 h-96 shimmer rounded-3xl" />
             ))}
           </div>
         ) : plans.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 auto-rows-fr gap-6 items-stretch">
             {plans.map((plan, i) => (
               <PlanCard key={plan._id} plan={plan} duration={duration} index={i} />
             ))}

@@ -5,6 +5,7 @@ const Plan = require('../models/Plan');
 const Product = require('../models/Product');
 const Payment = require('../models/Payment');
 const Invoice = require('../models/Invoice');
+const User = require('../models/User');
 
 const monthsMap = { monthly: 1, quarterly: 3, halfYearly: 6, yearly: 12 };
 
@@ -57,13 +58,16 @@ exports.createCheckoutOrder = async (req, res) => {
       });
     }
 
-    const { planId, productId, duration, personalTrainer, quantity = 1, color, size } = req.body;
+    const { planId, productId, duration, personalTrainer, quantity = 1, color, size, redeemPoints = 0 } = req.body;
     
     if (!planId && !productId) {
       return res.status(400).json({ success: false, message: 'Either planId or productId is required' });
     }
     
     let totalAmount = 0;
+    let originalAmount = 0;
+    let loyaltyDiscount = 0;
+    let pointsToRedeem = Math.max(0, Number(redeemPoints) || 0);
     let orderData = { user: req.user._id, currency: 'INR', status: 'pending', paymentStatus: 'pending' };
     let notes = { userId: req.user._id.toString() };
 
@@ -131,6 +135,21 @@ exports.createCheckoutOrder = async (req, res) => {
       notes.productId = product._id.toString();
       notes.quantity = quantity;
     }
+
+    originalAmount = totalAmount;
+
+    if (pointsToRedeem > 0) {
+      const user = await User.findById(req.user._id).select('loyaltyPoints');
+      const availablePoints = Number(user?.loyaltyPoints || 0);
+      const maxPointsForOrder = Math.floor(totalAmount) * 100;
+      pointsToRedeem = Math.floor(Math.min(pointsToRedeem, availablePoints, maxPointsForOrder));
+      loyaltyDiscount = Math.floor(pointsToRedeem / 100);
+      totalAmount = Math.max(1, totalAmount - loyaltyDiscount);
+    }
+
+    orderData.originalAmount = originalAmount;
+    orderData.loyaltyDiscount = loyaltyDiscount;
+    orderData.pointsRedeemed = pointsToRedeem;
     
     const amountPaise = Math.round(totalAmount * 100);
 
@@ -160,6 +179,9 @@ exports.createCheckoutOrder = async (req, res) => {
       success: true,
       orderId: order._id,
       amount: totalAmount,
+      originalAmount,
+      loyaltyDiscount,
+      pointsRedeemed: pointsToRedeem,
       amountPaise,
       currency: 'INR',
       razorpayOrder: {
@@ -247,7 +269,38 @@ exports.verifyPayment = async (req, res) => {
     order.status = 'active';
     order.gatewayOrderId = razorpay_order_id;
     order.gatewayPaymentId = razorpay_payment_id;
+
+    const pointsEarned = Math.max(1, Math.floor(order.totalAmount || 0));
+    order.pointsEarned = pointsEarned;
     await order.save();
+
+    const buyer = await User.findById(order.user).select('loyaltyPoints');
+    const redeemedApplied = Math.floor(Math.min(order.pointsRedeemed || 0, buyer?.loyaltyPoints || 0));
+
+    if (redeemedApplied !== (order.pointsRedeemed || 0)) {
+      order.pointsRedeemed = redeemedApplied;
+      await order.save();
+    }
+
+    const userUpdate = {
+      $inc: {
+        loyaltyPoints: pointsEarned - redeemedApplied,
+        totalPointsEarned: pointsEarned,
+        totalPointsRedeemed: redeemedApplied
+      }
+    };
+    await User.findByIdAndUpdate(order.user, userUpdate);
+
+    const userAfterUpdate = await User.findById(order.user).select('referredBy referralRewardGranted');
+    if (userAfterUpdate?.referredBy && !userAfterUpdate.referralRewardGranted) {
+      await User.findByIdAndUpdate(userAfterUpdate.referredBy, {
+        $inc: { loyaltyPoints: 100, totalPointsEarned: 100 }
+      });
+      await User.findByIdAndUpdate(order.user, {
+        $inc: { loyaltyPoints: 50, totalPointsEarned: 50 },
+        $set: { referralRewardGranted: true }
+      });
+    }
 
     let invoiceNumber = getInvoiceNumber();
     while (await Invoice.exists({ invoiceNumber })) {

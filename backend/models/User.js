@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: [true, 'Please provide a password'],
-    minlength: 6,
+    minlength: 8,
     select: false
   },
   phone: {
@@ -69,13 +69,57 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['user', 'admin'],
     default: 'user'
+  },
+  loyaltyPoints: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  totalPointsEarned: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  totalPointsRedeemed: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  referralCode: {
+    type: String,
+    unique: true,
+    sparse: true,
+    uppercase: true,
+    trim: true
+  },
+  referredBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  referralCount: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  referralRewardGranted: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
 });
 
+const generateReferralCode = () => {
+  const part = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `DFC${part}`;
+};
+
 // Hash password before saving
 userSchema.pre('save', async function(next) {
+  if (!this.referralCode) {
+    this.referralCode = generateReferralCode();
+  }
   if (!this.isModified('password')) return next();
   const salt = await bcrypt.genSalt(12);
   this.password = await bcrypt.hash(this.password, salt);

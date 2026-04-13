@@ -107,6 +107,14 @@ const Dashboard = () => {
               icon: FiShoppingBag,
               iconBg: 'from-pink-400 to-pink-600',
             },
+            {
+              label: 'Loyalty Points',
+              value: stats?.loyaltyPoints || 0,
+              sub: `Redeemed: ${stats?.totalPointsRedeemed || 0}`,
+              subColor: 'text-slate-400',
+              icon: FiAward,
+              iconBg: 'from-amber-400 to-amber-600',
+            },
           ].map((item, i) => (
             <ScrollReveal key={i} delay={i * 0.1}>
               <GlassCard className="p-5 sm:p-6">
@@ -183,6 +191,11 @@ const Dashboard = () => {
             <ScrollReveal delay={0.2}>
               <GlassCard className="p-6 sm:p-8">
                 <h2 className="font-display font-bold text-xl text-slate-800 mb-6">Quick Actions</h2>
+                <div className="glass rounded-xl p-3 mb-4">
+                  <p className="text-xs text-slate-500">Refer & Earn</p>
+                  <p className="text-sm text-slate-700 font-semibold break-all">{stats?.referralCode || 'Generating...'}</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Share this code. You and your friend both earn points.</p>
+                </div>
                 <div className="space-y-3">
                   <Link to="/plans" className="flex items-center gap-3 p-3 rounded-xl glass hover:bg-white/40 transition-all duration-500 group">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white">

@@ -53,6 +53,7 @@ exports.getDashboardSummary = async (req, res) => {
     const recentOrders = await Order.find()
       .populate('user', 'name email')
       .populate('plan', 'name category icon')
+      .populate('product', 'name')
       .sort({ createdAt: -1 })
       .limit(10);
 
@@ -147,6 +148,59 @@ exports.updateContactStatus = async (req, res) => {
   }
 };
 
+exports.replyToContact = async (req, res) => {
+  try {
+    const { reply } = req.body;
+
+    if (!reply || !reply.trim()) {
+      return res.status(400).json({ success: false, message: 'Reply message is required' });
+    }
+
+    const contact = await Contact.findById(req.params.id);
+
+    if (!contact) {
+      return res.status(404).json({ success: false, message: 'Contact not found' });
+    }
+
+    contact.adminReply = reply.trim();
+    contact.status = 'replied';
+    contact.repliedAt = new Date();
+    contact.repliedBy = req.user?.email || req.user?.name || 'admin';
+
+    await contact.save();
+
+    res.json({ success: true, message: 'Reply saved successfully', contact });
+  } catch (error) {
+    console.error('Reply to contact error:', error);
+    res.status(500).json({ success: false, message: 'Error saving reply' });
+  }
+};
+
+exports.updateContactPriority = async (req, res) => {
+  try {
+    const { priority } = req.body;
+
+    if (!['low', 'normal', 'high', 'urgent'].includes(priority)) {
+      return res.status(400).json({ success: false, message: 'Invalid priority' });
+    }
+
+    const contact = await Contact.findByIdAndUpdate(
+      req.params.id,
+      { priority },
+      { new: true }
+    );
+
+    if (!contact) {
+      return res.status(404).json({ success: false, message: 'Contact not found' });
+    }
+
+    res.json({ success: true, contact });
+  } catch (error) {
+    console.error('Update contact priority error:', error);
+    res.status(500).json({ success: false, message: 'Error updating contact priority' });
+  }
+};
+
 exports.getSalesReport = async (req, res) => {
   try {
     const { from, to } = req.query;
@@ -157,7 +211,7 @@ exports.getSalesReport = async (req, res) => {
       ...dateFilter
     };
 
-    const [summaryAgg, durationAgg, planAgg] = await Promise.all([
+    const [summaryAgg, durationAgg, planAgg, productAgg] = await Promise.all([
       Order.aggregate([
         { $match: matchStage },
         {
@@ -170,7 +224,7 @@ exports.getSalesReport = async (req, res) => {
         }
       ]),
       Order.aggregate([
-        { $match: matchStage },
+        { $match: { ...matchStage, plan: { $ne: null } } },
         {
           $group: {
             _id: '$duration',
@@ -181,7 +235,7 @@ exports.getSalesReport = async (req, res) => {
         { $sort: { revenue: -1 } }
       ]),
       Order.aggregate([
-        { $match: matchStage },
+        { $match: { ...matchStage, plan: { $ne: null } } },
         {
           $lookup: {
             from: 'plans',
@@ -199,6 +253,26 @@ exports.getSalesReport = async (req, res) => {
           }
         },
         { $sort: { revenue: -1 } }
+      ]),
+      Order.aggregate([
+        { $match: { ...matchStage, product: { $ne: null } } },
+        {
+          $lookup: {
+            from: 'products',
+            localField: 'product',
+            foreignField: '_id',
+            as: 'productData'
+          }
+        },
+        { $unwind: '$productData' },
+        {
+          $group: {
+            _id: '$productData.name',
+            orders: { $sum: 1 },
+            revenue: { $sum: '$totalAmount' }
+          }
+        },
+        { $sort: { revenue: -1 } }
       ])
     ]);
 
@@ -207,7 +281,8 @@ exports.getSalesReport = async (req, res) => {
       range: { from: from || null, to: to || null },
       summary: summaryAgg[0] || { orders: 0, revenue: 0, avgOrderValue: 0 },
       byDuration: durationAgg,
-      byPlan: planAgg
+      byPlan: planAgg,
+      byProduct: productAgg
     });
   } catch (error) {
     console.error('Sales report error:', error);

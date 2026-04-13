@@ -19,6 +19,8 @@ const PlanDetail = () => {
   const [duration, setDuration] = useState('monthly');
   const [personalTrainer, setPersonalTrainer] = useState(false);
   const [ordering, setOrdering] = useState(false);
+  const [loyaltyPoints, setLoyaltyPoints] = useState(0);
+  const [redeemPoints, setRedeemPoints] = useState(0);
 
   useEffect(() => {
     const fetchPlan = async () => {
@@ -35,11 +37,30 @@ const PlanDetail = () => {
     fetchPlan();
   }, [slug]);
 
+  useEffect(() => {
+    const fetchLoyalty = async () => {
+      if (!user) return;
+      try {
+        const { data } = await API.get('/users/stats');
+        if (data.success) {
+          setLoyaltyPoints(data.stats?.loyaltyPoints || 0);
+        }
+      } catch (error) {
+        // Keep checkout usable even if loyalty fetch fails.
+      }
+    };
+    fetchLoyalty();
+  }, [user]);
+
   const monthsMap = { monthly: 1, quarterly: 3, halfYearly: 6, yearly: 12 };
 
   const planPrice = plan?.pricing?.[duration] || 0;
   const trainerPrice = personalTrainer ? (plan?.personalTrainerPrice || 0) * (monthsMap[duration] || 1) : 0;
-  const totalPrice = planPrice + trainerPrice;
+  const baseTotal = planPrice + trainerPrice;
+  const maxRedeemablePoints = Math.floor(baseTotal) * 100;
+  const pointsApplied = Math.floor(Math.min(Math.max(0, Number(redeemPoints) || 0), loyaltyPoints, maxRedeemablePoints));
+  const loyaltyDiscountRupees = Math.floor(pointsApplied / 100);
+  const totalPrice = Math.max(1, baseTotal - loyaltyDiscountRupees);
 
   const durationLabels = {
     monthly: 'Monthly (1 Month)',
@@ -66,6 +87,7 @@ const PlanDetail = () => {
         planId: plan._id,
         duration,
         personalTrainer,
+        redeemPoints: pointsApplied
       });
 
       if (!data.success) {
@@ -293,6 +315,27 @@ const PlanDetail = () => {
                       <div className="flex justify-between text-sm mb-2">
                         <span className="text-slate-500">Personal Trainer</span>
                         <span className="text-slate-700">₹{trainerPrice.toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-slate-500">Loyalty Points</span>
+                      <span className="text-slate-700">{loyaltyPoints}</span>
+                    </div>
+                    <div className="mb-2">
+                      <label className="text-xs text-slate-500">Redeem Points (100 points = ₹1)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max={Math.min(loyaltyPoints, maxRedeemablePoints)}
+                        value={redeemPoints}
+                        onChange={(e) => setRedeemPoints(Math.max(0, Number(e.target.value) || 0))}
+                        className="glass-input mt-1 !py-2 text-sm"
+                      />
+                    </div>
+                    {pointsApplied > 0 && (
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="text-slate-500">Points Discount</span>
+                        <span className="text-green-700">-₹{loyaltyDiscountRupees.toLocaleString('en-IN')}</span>
                       </div>
                     )}
                     <div className="border-t border-white/30 mt-3 pt-3 flex justify-between">

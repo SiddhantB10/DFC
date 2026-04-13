@@ -70,8 +70,9 @@ const Profile = () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       return toast.error('Passwords do not match');
     }
-    if (passwordData.newPassword.length < 6) {
-      return toast.error('Password must be at least 6 characters');
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
+    if (!strongPasswordRegex.test(passwordData.newPassword)) {
+      return toast.error('Password must be at least 8 characters and include uppercase and lowercase letters');
     }
     setPasswordLoading(true);
     try {
@@ -230,7 +231,7 @@ const Profile = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-600 mb-2">New Password</label>
-                  <input type="password" name="newPassword" value={passwordData.newPassword} onChange={handlePasswordChange} className="glass-input" placeholder="Min. 6 characters" />
+                  <input type="password" name="newPassword" value={passwordData.newPassword} onChange={handlePasswordChange} className="glass-input" placeholder="Min. 8 chars with A-Z and a-z" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-600 mb-2">Confirm New Password</label>

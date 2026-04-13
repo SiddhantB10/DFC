@@ -26,6 +26,23 @@ const contactSchema = new mongoose.Schema({
     type: String,
     enum: ['new', 'read', 'replied'],
     default: 'new'
+  },
+  priority: {
+    type: String,
+    enum: ['low', 'normal', 'high', 'urgent'],
+    default: 'normal'
+  },
+  adminReply: {
+    type: String,
+    default: ''
+  },
+  repliedAt: {
+    type: Date,
+    default: null
+  },
+  repliedBy: {
+    type: String,
+    default: ''
   }
 }, {
   timestamps: true

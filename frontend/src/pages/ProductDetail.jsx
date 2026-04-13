@@ -5,6 +5,7 @@ import ScrollReveal from '../components/ScrollReveal';
 import FloatingShapes from '../components/FloatingShapes';
 import { FiHeart, FiShoppingCart, FiShare2, FiCheck, FiChevronRight } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -78,11 +79,12 @@ const ProductDetail = () => {
 
       if (response.data.success) {
         setAddedToCart(true);
+        toast.success(response.data.message || 'Added to cart');
         setTimeout(() => setAddedToCart(false), 2000);
       }
     } catch (error) {
       console.error('Error adding to cart:', error);
-      alert(error.response?.data?.message || 'Error adding to cart');
+      toast.error(error.response?.data?.message || 'Error adding to cart');
     }
   };
 
@@ -99,10 +101,12 @@ const ProductDetail = () => {
       );
 
       if (response.data.success) {
-        setAddedToWishlist(!addedToWishlist);
+        setAddedToWishlist(true);
+        toast.success(response.data.message || 'Added to wishlist');
       }
     } catch (error) {
       console.error('Error adding to wishlist:', error);
+      toast.error(error.response?.data?.message || 'Error adding to wishlist');
     }
   };
 

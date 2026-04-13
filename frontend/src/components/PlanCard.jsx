@@ -53,39 +53,40 @@ const PlanCard = ({ plan, duration = 'monthly', index = 0 }) => {
 
   return (
     <motion.div
+      className="h-full"
       initial={{ opacity: 0, y: 24, filter: 'blur(6px)' }}
       animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
       transition={{ delay: index * 0.08, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
     >
       <GlassCard
         hover3D={false}
-        className={`p-6 sm:p-8 h-full flex flex-col relative ${
+        className={`p-6 sm:p-8 h-full sm:h-[740px] lg:h-[760px] flex flex-col hover:!translate-y-0 ${
           plan.isPopular ? 'ring-2 ring-primary-400/30 ring-offset-0' : ''
         }`}
         glowColor={plan.color ? `${plan.color}15` : undefined}
         intensity={5}
       >
-        {plan.isPopular && (
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
+        <div className="mb-3 h-[30px] flex items-center justify-end">
+          {plan.isPopular && (
             <span className="badge-popular px-4 py-1.5 bg-gradient-to-r from-primary-500 to-secondary-500 text-white text-xs font-semibold rounded-full shadow-lg shadow-primary-500/20">
               Most Popular
             </span>
-          </div>
-        )}
+          )}
+        </div>
 
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-start gap-3 mb-4 min-h-[72px]">
           <span className="text-3xl">{plan.icon}</span>
           <div>
-            <h3 className="font-display font-bold text-lg text-slate-800">{plan.name}</h3>
+            <h3 className="font-display font-bold text-lg text-slate-800 leading-tight line-clamp-2">{plan.name}</h3>
             <span className="text-xs font-medium text-slate-400 capitalize">{plan.category}</span>
           </div>
         </div>
 
-        <p className="text-sm text-slate-500 leading-relaxed mb-6">
+        <p className="text-sm text-slate-500 leading-relaxed mb-6 min-h-[56px] line-clamp-2">
           {plan.shortDescription}
         </p>
 
-        <div className="mb-6">
+        <div className="mb-6 min-h-[84px]">
           <div className="flex items-end gap-1">
             <span className="text-sm text-slate-400">₹</span>
             <motion.span
@@ -106,11 +107,11 @@ const PlanCard = ({ plan, duration = 'monthly', index = 0 }) => {
           )}
         </div>
 
-        <ul className="space-y-2.5 mb-8 flex-grow">
+        <ul className="space-y-2.5 mb-8 flex-grow min-h-[220px]">
           {plan.features?.slice(0, 6).map((feature, i) => (
             <li key={i} className="flex items-start gap-2.5 text-sm text-slate-600">
               <FiCheck className="text-primary-500 mt-0.5 flex-shrink-0" size={16} />
-              <span>{feature}</span>
+              <span className="block flex-1 min-w-0 truncate">{feature}</span>
             </li>
           ))}
           {plan.features?.length > 6 && (
@@ -120,22 +121,24 @@ const PlanCard = ({ plan, duration = 'monthly', index = 0 }) => {
           )}
         </ul>
 
-        <div className="grid grid-cols-2 gap-2 mb-2">
-          <button onClick={addToCart} className="glass-btn glass-btn-secondary w-full justify-center text-xs">
-            <FiShoppingCart size={14} /> Add Cart
-          </button>
-          <button onClick={addToWishlist} className="glass-btn glass-btn-secondary w-full justify-center text-xs">
-            <FiHeart size={14} /> Wishlist
-          </button>
-        </div>
+        <div className="mt-auto pt-1">
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            <button onClick={addToCart} className="glass-btn glass-btn-secondary w-full justify-center text-xs">
+              <FiShoppingCart size={14} /> Add Cart
+            </button>
+            <button onClick={addToWishlist} className="glass-btn glass-btn-secondary w-full justify-center text-xs">
+              <FiHeart size={14} /> Wishlist
+            </button>
+          </div>
 
-        <Link
-          to={`/plans/${plan.slug}`}
-          className="glass-btn glass-btn-primary w-full text-center group"
-        >
-          View Plan Details
-          <FiArrowRight className="group-hover:translate-x-1.5 transition-transform duration-500 ease-out-expo" />
-        </Link>
+          <Link
+            to={`/plans/${plan.slug}`}
+            className="glass-btn glass-btn-primary w-full text-center group"
+          >
+            View Plan Details
+            <FiArrowRight className="group-hover:translate-x-1.5 transition-transform duration-500 ease-out-expo" />
+          </Link>
+        </div>
       </GlassCard>
     </motion.div>
   );

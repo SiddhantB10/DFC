@@ -18,7 +18,7 @@ const Register = () => {
   const [formData, setFormData] = useState({
     name: '', email: '', password: '', phone: '',
     age: '', gender: '', height: '', weight: '',
-    goalWeight: '', fitnessLevel: 'beginner',
+    goalWeight: '', fitnessLevel: 'beginner', referralCode: ''
   });
 
   const handleChange = (e) => {
@@ -30,8 +30,9 @@ const Register = () => {
       toast.error('Please fill in all fields');
       return false;
     }
-    if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
+    if (!strongPasswordRegex.test(formData.password)) {
+      toast.error('Password must be at least 8 characters and include uppercase and lowercase letters');
       return false;
     }
     if (!/^\d{10}$/.test(formData.phone)) {
@@ -150,7 +151,7 @@ const Register = () => {
                       <input
                         type={showPassword ? 'text' : 'password'} name="password"
                         value={formData.password} onChange={handleChange}
-                        placeholder="Min. 6 characters" className="glass-input !pl-11 !pr-11"
+                        placeholder="Min. 8 chars with A-Z and a-z" className="glass-input !pl-11 !pr-11"
                       />
                       <button type="button" onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
@@ -168,6 +169,18 @@ const Register = () => {
                         placeholder="10-digit number" className="glass-input !pl-11" maxLength={10}
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-2">Referral Code (Optional)</label>
+                    <input
+                      type="text"
+                      name="referralCode"
+                      value={formData.referralCode}
+                      onChange={handleChange}
+                      placeholder="Enter referral code"
+                      className="glass-input uppercase"
+                    />
                   </div>
 
                   <button type="button" onClick={handleNext}

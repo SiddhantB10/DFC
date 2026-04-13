@@ -14,6 +14,8 @@ const Cart = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingItemId, setProcessingItemId] = useState('');
+  const [loyaltyPoints, setLoyaltyPoints] = useState(0);
+  const [redeemPointsByItem, setRedeemPointsByItem] = useState({});
 
   const fetchCart = async () => {
     setLoading(true);
@@ -32,6 +34,21 @@ const Cart = () => {
   useEffect(() => {
     fetchCart();
   }, []);
+
+  useEffect(() => {
+    const fetchLoyalty = async () => {
+      if (!user) return;
+      try {
+        const { data } = await API.get('/users/stats');
+        if (data.success) {
+          setLoyaltyPoints(data.stats?.loyaltyPoints || 0);
+        }
+      } catch (error) {
+        // non-blocking for cart usage
+      }
+    };
+    fetchLoyalty();
+  }, [user]);
 
   const subtotal = useMemo(
     () => items.reduce((sum, item) => sum + (item.amount || 0), 0),
@@ -64,18 +81,24 @@ const Cart = () => {
     try {
         // Determine checkout payload based on item type
         let checkoutPayload = {};
+        const itemAmount = Number(item.amount || 0);
+        const requestedRedeem = Number(redeemPointsByItem[item._id] || 0);
+        const maxRedeemablePoints = Math.floor(itemAmount) * 100;
+        const pointsToRedeem = Math.floor(Math.min(Math.max(0, requestedRedeem), loyaltyPoints, maxRedeemablePoints));
         if (item.type === 'plan') {
           checkoutPayload = {
             planId: item.plan._id,
             duration: item.duration,
-            personalTrainer: item.personalTrainer
+            personalTrainer: item.personalTrainer,
+            redeemPoints: pointsToRedeem
           };
         } else if (item.type === 'product') {
           checkoutPayload = {
             productId: item.product._id,
             quantity: item.quantity,
             color: item.color,
-            size: item.size
+            size: item.size,
+            redeemPoints: pointsToRedeem
           };
         } else {
           throw new Error('Unknown item type');
@@ -130,6 +153,7 @@ const Cart = () => {
             if (verifyRes.data.success) {
               await API.delete(`/cart/${item._id}`);
               setItems((prev) => prev.filter((x) => x._id !== item._id));
+              setLoyaltyPoints((prev) => Math.max(0, prev - pointsToRedeem));
               toast.success('Payment successful. Subscription activated and invoice generated.');
               navigate('/my-orders');
             }
@@ -234,6 +258,18 @@ const Cart = () => {
 
                       <div className="text-right">
                         <p className="font-display font-bold text-lg text-slate-800">₹{(item.amount || 0).toLocaleString('en-IN')}</p>
+                        <div className="mt-2">
+                          <p className="text-[11px] text-slate-500">Available Points: {loyaltyPoints} (100 points = ₹1)</p>
+                          <input
+                            type="number"
+                            min="0"
+                            max={Math.min(loyaltyPoints, Math.floor(Number(item.amount || 0)) * 100)}
+                            value={redeemPointsByItem[item._id] || ''}
+                            onChange={(e) => setRedeemPointsByItem((prev) => ({ ...prev, [item._id]: e.target.value }))}
+                            placeholder="Redeem points"
+                            className="glass-input !py-1.5 text-xs mt-1"
+                          />
+                        </div>
                         <div className="flex justify-end gap-2 mt-2">
                           <button
                             onClick={() => removeItem(item._id)}

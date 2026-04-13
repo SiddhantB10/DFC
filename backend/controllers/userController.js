@@ -42,6 +42,18 @@ exports.changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
 
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Current and new password are required' });
+    }
+
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
+    if (!strongPasswordRegex.test(newPassword)) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 8 characters and include uppercase and lowercase letters'
+      });
+    }
+
     const user = await User.findById(req.user._id).select('+password');
 
     const isMatch = await user.matchPassword(currentPassword);
@@ -89,7 +101,12 @@ exports.getUserStats = async (req, res) => {
         totalOrders,
         activeSubscription,
         fitnessLevel: user.fitnessLevel,
-        memberSince: user.createdAt
+        memberSince: user.createdAt,
+        loyaltyPoints: user.loyaltyPoints || 0,
+        totalPointsEarned: user.totalPointsEarned || 0,
+        totalPointsRedeemed: user.totalPointsRedeemed || 0,
+        referralCode: user.referralCode || '',
+        referralCount: user.referralCount || 0
       }
     });
   } catch (error) {
